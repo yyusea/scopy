@@ -31,7 +31,7 @@ MenuOption::MenuOption(QString toolName, QString iconPath,
 	botSep(nullptr),
 	topSep(nullptr),
 	detached(false),
-	maxMenuElements(8),
+	maxMenuElements(9),
 	doubleClickEnabled(false)
 {
 	ui->setupUi(this);

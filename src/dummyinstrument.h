@@ -21,4 +21,4 @@ private:
 	Ui::DummyInstrument *ui;
 };
 }
-#endif // AUDIOPLAYER_H
+#endif // DUMMYINSTRUMENT_H

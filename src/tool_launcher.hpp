@@ -51,6 +51,7 @@
 #include "info_page.hpp"
 #include "device_widget.hpp"
 #include "connectDialog.hpp"
+#include "dummyinstrument.h"
 
 extern "C" {
 	struct iio_context;
@@ -117,6 +118,7 @@ private Q_SLOTS:
 	void btnSpectrumAnalyzer_clicked();
 	void btnDebugger_clicked();
 	void btnCalibration_clicked();
+	void btnDummyInstrument_clicked();
 	void on_btnHome_clicked();
 	void setButtonBackground(bool on);
 
@@ -214,6 +216,7 @@ private:
 	QSettings *settings;
 	Preferences *prefPanel;
 	UserNotes *notesPanel;
+	DummyInstrument *dummyinstrument;
 
 	QButtonGroup adc_users_group;
 

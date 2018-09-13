@@ -80,7 +80,8 @@ ToolLauncher::ToolLauncher(QWidget *parent) :
 	manual_calibration_enabled(false),
 	devices_btn_group(new QButtonGroup(this)),
 	selectedDev(nullptr),
-	closeEventTriggered(false)
+	closeEventTriggered(false),
+	dummyinstrument(nullptr)
 {
 	if (!isatty(STDIN_FILENO))
 		notifier.setEnabled(false);
@@ -91,7 +92,9 @@ ToolLauncher::ToolLauncher(QWidget *parent) :
 	      << "Network Analyzer" << "Signal Generator"
 	      << "Logic Analyzer" << "Pattern Generator"
 	      << "Digital IO" << "Voltmeter"
-	      << "Power Supply" << "Debugger" << "Calibration";
+	      << "Power Supply" << "Dummy Instrument"
+	      << "Debugger" << "Calibration";
+
 
 	toolIcons << ":/menu/oscilloscope.png"
 		<< ":/menu/spectrum_analyzer.png"
@@ -102,6 +105,7 @@ ToolLauncher::ToolLauncher(QWidget *parent) :
 		<< ":/menu/io.png"
 		<< ":/menu/voltmeter.png"
 		<< ":/menu/power_supply.png"
+		<< ":/menu/calibration.png"
 		<< ":/menu/debugger.png"
 		<< ":/menu/calibration.png";
 
@@ -178,6 +182,8 @@ ToolLauncher::ToolLauncher(QWidget *parent) :
 		SLOT(btnDebugger_clicked()));
 	connect(toolMenu["Calibration"]->getToolBtn(), SIGNAL(clicked()), this,
 		SLOT(btnCalibration_clicked()));
+	connect(toolMenu["Dummy Instrument"]->getToolBtn(), SIGNAL(clicked()), this,
+		SLOT(btnDummyInstrument_clicked()));
 
 
 
@@ -209,6 +215,8 @@ ToolLauncher::ToolLauncher(QWidget *parent) :
 	connect(ui->prefBtn, SIGNAL(toggled(bool)), this,
 		SLOT(setButtonBackground(bool)));
 	connect(ui->btnNotes, SIGNAL(toggled(bool)), this,
+		SLOT(setButtonBackground(bool)));
+	connect(toolMenu["Dummy Instrument"]->getToolBtn(), SIGNAL(toggled(bool)), this,
 		SLOT(setButtonBackground(bool)));
 
 	ui->saveBtn->parentWidget()->setEnabled(false);
@@ -1046,6 +1054,11 @@ void adiscope::ToolLauncher::btnCalibration_clicked()
 	swapMenu(static_cast<QWidget *>(manual_calibration));
 }
 
+void adiscope::ToolLauncher::btnDummyInstrument_clicked()
+{
+	swapMenu(static_cast<QWidget *>(dummyinstrument));
+}
+
 void adiscope::ToolLauncher::resetStylesheets()
 {
 	setDynamicProperty(ui->btnConnect, "connected", false);
@@ -1241,6 +1254,12 @@ void adiscope::ToolLauncher::destroyContext()
 	if (spectrum_analyzer) {
 		delete spectrum_analyzer;
 		spectrum_analyzer = nullptr;
+	}
+
+	if(dummyinstrument)
+	{
+		delete dummyinstrument;
+		dummyinstrument=nullptr;
 	}
 
 	if (debugger) {
@@ -1599,6 +1618,8 @@ bool adiscope::ToolLauncher::switchContext(const QString& uri)
 		}
 	});
 
+	dummyinstrument= new DummyInstrument(toolMenu["Dummy Instrument"]->getToolStopBtn(), this);
+
 	loadToolTips(true);
 	calibration_thread = QtConcurrent::run(std::bind(&ToolLauncher::calibrate,
 					       this));
@@ -1857,8 +1878,10 @@ void ToolLauncher::detachToolOnPosition(int position)
 				debugger->detached();
 			else if (x->getName() == "Calibration")
 				manual_calibration->detached();
-			else
+			else if (x->getName() == "Spectrum Analyzer")
 				spectrum_analyzer->detached();
-		
+			else {
+				dummyinstrument->detached();
 			}
+		}
 }
