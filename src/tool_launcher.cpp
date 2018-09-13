@@ -1374,7 +1374,10 @@ void adiscope::ToolLauncher::enableAdcBasedTools()
 	if (filter->compatible(TOOL_DMM)) {
 		dmm = new DMM(ctx, filter, adc, toolMenu["Voltmeter"]->getToolStopBtn(),
 				&js_engine, this);
-		adc_users_group.addButton(toolMenu["Voltmeter"]->getToolStopBtn());\
+
+		dummyinstrument= new DummyInstrument(toolMenu["Dummy Instrument"]->getToolStopBtn(), dmm , this);
+
+		adc_users_group.addButton(toolMenu["Voltmeter"]->getToolStopBtn());
 		toolList.push_back(dmm);
 		connect(dmm, &DMM::showTool, [=]() {
 			toolMenu["Voltmeter"]->getToolBtn()->click();
@@ -1617,8 +1620,6 @@ bool adiscope::ToolLauncher::switchContext(const QString& uri)
 			}
 		}
 	});
-
-	dummyinstrument= new DummyInstrument(toolMenu["Dummy Instrument"]->getToolStopBtn(), this);
 
 	loadToolTips(true);
 	calibration_thread = QtConcurrent::run(std::bind(&ToolLauncher::calibrate,
