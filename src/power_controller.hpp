@@ -47,6 +47,7 @@ namespace adiscope {
 	{
 		friend class PowerController_API;
 		friend class ToolLauncher_API;
+		friend class DummyInstrument;
 
 		Q_OBJECT
 

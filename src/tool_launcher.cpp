@@ -1375,7 +1375,7 @@ void adiscope::ToolLauncher::enableAdcBasedTools()
 		dmm = new DMM(ctx, filter, adc, toolMenu["Voltmeter"]->getToolStopBtn(),
 				&js_engine, this);
 
-		dummyinstrument= new DummyInstrument(toolMenu["Dummy Instrument"]->getToolStopBtn(), dmm , this);
+		dummyinstrument= new DummyInstrument(toolMenu["Dummy Instrument"]->getToolStopBtn(), dmm , power_control, this);
 
 		adc_users_group.addButton(toolMenu["Voltmeter"]->getToolStopBtn());
 		toolList.push_back(dmm);
