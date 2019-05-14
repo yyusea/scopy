@@ -234,8 +234,8 @@ namespace adiscope {
 		unsigned int nb_ref_channels;
 		double active_sample_rate;
 		double noZoomXAxisWidth;
-		unsigned long active_sample_count;
-		unsigned long active_plot_sample_count;
+		long long active_sample_count;
+		long long active_plot_sample_count;
 		long long active_trig_sample_count;
 		double active_time_pos;
 		double memory_adjusted_time_pos;
@@ -416,7 +416,7 @@ namespace adiscope {
 		void pause(bool paused);
 		void cursor_panel_init();
 		void setFFT_params(bool force=false);
-		void setChannelWidgetIndex(int chnIdx);
+		void setChannelWidgetIndex(unsigned int chnIdx);
 
 		void init_channel_settings();
 		void editMathChannelFunction(int id, const std::string &new_function);
