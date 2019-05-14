@@ -327,7 +327,7 @@ void HistogramDisplayPlot::setOrientation(Qt::Orientation orientation)
 {
 	d_orientation = orientation;
 
-	for (int i = 0; i < d_histograms.size(); ++i) {
+	for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 		d_histograms[i]->setOrientation(orientation);
 	}
 
@@ -437,7 +437,7 @@ void HistogramDisplayPlot::setXaxisSpan(double start, double stop)
 		return;
 	}
 
-	for (int i = 0; i < d_histograms.size(); ++i) {
+	for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 		setAxisScale(QwtAxisId(QwtPlot::xBottom, i), start, stop);
 	}
 }
@@ -533,7 +533,7 @@ HistogramDisplayPlot::plotNewData(const std::vector<double*> dataPoints,
       d_height = height;
 
       if (d_orientation == Qt::Vertical) {
-	      for (int i = 0; i < d_histograms.size(); ++i) {
+	      for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 		      double h = histogramHeights[i] + (0.2 * histogramHeights[i]);
 		      if (h > numDataPoints) {
 			      h = numDataPoints;
@@ -644,7 +644,7 @@ HistogramDisplayPlot::_autoScaleY(double bottom, double top)
 
 void HistogramDisplayPlot::_updateXScales(unsigned int totalSamples)
 {
-	for (int i = 0; i < d_histograms.size(); ++i) {
+	for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 		HistogramScaleDraw *hsd = dynamic_cast<HistogramScaleDraw*>(
 					axisWidget(QwtAxisId(QwtPlot::yLeft, i))->scaleDraw());
 		if (hsd) {
@@ -658,16 +658,16 @@ void HistogramDisplayPlot::_orientationChanged()
 {
 	if (d_orientation == Qt::Horizontal) {
 		int min_h = d_histograms[0]->getMaxHeight();
-		for (int i = 1; i < d_histograms.size(); ++i) {
+		for (unsigned int i = 1; i < d_histograms.size(); ++i) {
 			min_h = std::min(min_h, d_histograms[i]->getMaxHeight());
 		}
-		for (int i = 0; i < d_histograms.size(); ++i) {
+		for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 			setAxisScale(QwtAxisId(QwtPlot::xBottom, i), -min_h, 0);
 		}
 
 	} else {
 		//big histogram
-		for (int i = 0; i < d_histograms.size(); ++i) {
+		for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 			int h = d_histograms[i]->getMaxHeight();
 			h += h * 0.2;
 			setAxisScale(QwtAxisId(QwtPlot::yLeft, i), 0, h);
@@ -696,7 +696,9 @@ void HistogramDisplayPlot::setSelectedChannel(unsigned int value)
 
 	for (int i = 0; i < d_zoomer.size(); ++i) {
 		d_zoomer[i]->setTrackerMode(
-				(i == value) ? QwtPicker::AlwaysOn : QwtPicker::AlwaysOff);
+				(i == static_cast<int>(value)) ?
+						QwtPicker::AlwaysOn :
+						QwtPicker::AlwaysOff);
 	}
 
 	d_selected_channel = value;
@@ -708,7 +710,7 @@ void HistogramDisplayPlot::setSelectedChannel(unsigned int value)
 		return;
 	}
 
-	for (int i = 0; i < d_histograms.size(); ++i) {
+	for (unsigned int i = 0; i < d_histograms.size(); ++i) {
 		setAxisVisible(QwtAxisId(QwtPlot::yLeft, i), value == i);
 		setAxisVisible(QwtAxisId(QwtPlot::xBottom, i), value == i);
 	}
@@ -879,8 +881,8 @@ HistogramDisplayPlot::setNumBins(int bins)
 
 HistogramScaleDraw::HistogramScaleDraw() :
 	QwtScaleDraw(),
-	m_color(Qt::gray),
-	m_totalSamples(0)
+	m_totalSamples(0),
+	m_color(Qt::gray)
 {
 	enableComponent(QwtAbstractScaleDraw::Backbone, false);
 	enableComponent(QwtAbstractScaleDraw::Ticks, false);
