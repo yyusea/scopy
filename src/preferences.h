@@ -107,6 +107,7 @@ private Q_SLOTS:
 private:
 	Ui::Preferences *ui;
 	QString preferencesFileName;
+	Preferences_API *pref_api;
 
 	bool osc_labels_enabled;
 	int sig_gen_periods_nr;
@@ -127,7 +128,6 @@ private:
 	bool digital_decoders_enabled;
 	bool m_initialized;
 
-	Preferences_API *pref_api;
 	QString getPreferenceIniFile() const;
 };
 
