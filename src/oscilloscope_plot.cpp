@@ -38,6 +38,7 @@ OscilloscopePlot::OscilloscopePlot(QWidget *parent,
 {
 	setYaxisUnit("V");
 
+
 	setMinXaxisDivision(100E-9); // A minimum division of 100 nano second
 	setMaxXaxisDivision(1E-3); // A maximum division of 1 milli second - until adding decimation
 	setMinYaxisDivision(1E-6); // A minimum division of 1 micro Volts
@@ -56,20 +57,20 @@ CapturePlot::CapturePlot(QWidget *parent,
 	OscilloscopePlot(parent, xNumDivs, yNumDivs),
 	d_triggerAEnabled(false),
 	d_triggerBEnabled(false),
-	d_selected_channel(-1),
+	d_vertCursorsEnabled(false),
+	d_horizCursorsEnabled(false),
 	d_measurementsEnabled(false),
-	d_cursorReadoutsVisible(false),
+	d_labelsEnabled(false),
+	d_selected_channel(-1),
+	d_bonusWidth(0),
 	d_bufferSizeLabelVal(0),
 	d_sampleRateLabelVal(1.0),
-	d_labelsEnabled(false),
+	d_cursorReadoutsVisible(false),
 	d_timeTriggerMinValue(-1),
 	d_timeTriggerMaxValue(1),
 	d_trackMode(false),
 	horizCursorsLocked(false),
 	vertCursorsLocked(false),
-	d_horizCursorsEnabled(false),
-	d_vertCursorsEnabled(false),
-	d_bonusWidth(0),
 	d_gatingEnabled(false)
 {
 	setMinimumHeight(250);
@@ -1443,7 +1444,7 @@ void CapturePlot::onChannelAdded(int chnIdx)
 
 void CapturePlot::computeMeasurementsForChannel(unsigned int chnIdx, unsigned int sampleRate)
 {
-	if (chnIdx >= d_measureObjs.size()) {
+	if (static_cast<int>(chnIdx) >= d_measureObjs.size()) {
 		return;
 	}
 
@@ -1677,9 +1678,9 @@ void CapturePlot::updateBufferSizeSampleRateLabel(int nsamples, double sr)
 
 void CapturePlot::removeLeftVertAxis(unsigned int axis)
 {
-	const unsigned int numAxis = vertAxes.size();
+	const int numAxis = vertAxes.size();
 
-	if (axis >= numAxis)
+	if (static_cast<int>(axis) >= numAxis)
 		return;
 
 	// Update the mobile axis ID of all symbols
