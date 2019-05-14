@@ -107,7 +107,7 @@ public Q_SLOTS:
 	void plot(double x, double y);
 	void reset();
 
-	void setNumSamples(int num);
+	void setNumSamples(unsigned int num);
 	void setColor(const QColor& color);
 	void setThickness(int index);
 	void setXTitle(const QString& title);

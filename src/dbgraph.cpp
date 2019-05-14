@@ -104,16 +104,16 @@ void dBgraph::setupReadouts()
 
 dBgraph::dBgraph(QWidget *parent) : QwtPlot(parent),
 	curve("data"),
-	d_cursorsCentered(false),
-	d_cursorsEnabled(false),
+	numSamples(0),
 	xmin(10),
 	xmax(10),
 	ymin(10),
 	ymax(10),
-	d_plotPosition(0),
-	numSamples(0),
 	delta_label(false),
-	d_plotBarEnabled(true)
+	d_plotBarEnabled(true),
+	d_cursorsEnabled(false),
+	d_cursorsCentered(false),
+	d_plotPosition(0)
 {
 	enableAxis(QwtPlot::xBottom, false);
 	enableAxis(QwtPlot::xTop, true);
@@ -262,7 +262,7 @@ void dBgraph::plot(double x, double y)
 		}
 	}
 
-	if (xdata.size() == numSamples) {
+	if (xdata.size() == static_cast<int>(numSamples)) {
 		xdata[d_plotPosition] = x;
 		ydata[d_plotPosition] = y;
 
@@ -333,13 +333,13 @@ const QwtScaleWidget *dBgraph::getAxisWidget(QwtAxisId id)
 	return axisWidget(id);
 }
 
-void dBgraph::setNumSamples(int num)
+void dBgraph::setNumSamples(unsigned int num)
 {
 	if (numSamples == num) {
 		return;
 	}
 
-	numSamples = (unsigned int) num;
+	numSamples = num;
 
 	reset();
 
@@ -707,7 +707,7 @@ QVector<double> dBgraph::getXAxisData()
 {
 	QVector<double> data;
 
-	for (int i = 0; i < curve.data()->size(); ++i) {
+	for (unsigned int i = 0; i < curve.data()->size(); ++i) {
 		data.push_back(curve.data()->sample(i).x());
 	}
 
@@ -718,7 +718,7 @@ QVector<double> dBgraph::getYAxisData()
 {
 	QVector<double> data;
 
-	for (int i = 0; i < curve.data()->size(); ++i) {
+	for (unsigned int i = 0; i < curve.data()->size(); ++i) {
 		data.push_back(curve.data()->sample(i).y());
 	}
 
@@ -733,7 +733,7 @@ void dBgraph::enableFrequencyBar(bool enable)
 
 void dBgraph::setYAxisInterval(double min, double max, double correction)
 {
-	for (size_t i = 0; i < ydata.size(); ++i) {
+	for (int i = 0; i < ydata.size(); ++i) {
 		double value = ydata[i];
 		bool modified = false;
 		if (value > max) {
