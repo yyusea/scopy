@@ -375,9 +375,9 @@ public Q_SLOTS:
   virtual void setXaxis(double min, double max);
   virtual void setLineLabel(int which, QString label);
   virtual QString getLineLabel(int which);
-  virtual void setLineColor(int which, QColor color);
+  virtual void setLineColor(unsigned int which, QColor color);
   void setLineColor(int chnIdx, int colorIdx);
-  virtual QColor getLineColor(int which) const;
+  virtual QColor getLineColor(unsigned int which) const;
   virtual void setLineWidth(int which, int width);
   virtual int getLineWidth(int which) const;
   virtual void setLineStyle(int which, Qt::PenStyle style);
@@ -396,7 +396,7 @@ public Q_SLOTS:
   int activeVertAxis();
 
   void setVertOffset(double offset, int axisIdx = 0);
-  double VertOffset(int axisIdx = 0);
+  double VertOffset(unsigned int axisIdx = 0);
   void setHorizOffset(double offset);
   double HorizOffset();
   void setVertUnitsPerDiv(double upd, int axisIdx = 0);
@@ -465,7 +465,7 @@ public Q_SLOTS:
   void setXaxisLabelFontSize(int fs);
   void setAxesLabelFontSize(int fs);
   void setXaxisMouseGesturesEnabled(bool en);
-  void setYaxisMouseGesturesEnabled(int axisId, bool en);
+  void setYaxisMouseGesturesEnabled(unsigned int axisId, bool en);
 
   void setStop(bool on);
 

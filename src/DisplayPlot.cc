@@ -49,8 +49,8 @@ OscScaleDraw::OscScaleDraw(const QString &unit) : QwtScaleDraw(),
 	m_formatter(NULL),
 	m_color(Qt::gray),
 	m_displayScale(1),
-	m_shouldDrawMiddleDelta(false),
 	m_nrTicks(0),
+	m_shouldDrawMiddleDelta(false),
 	m_delta(false)
 {
 	enableComponent(QwtAbstractScaleDraw::Backbone, false);
@@ -137,7 +137,7 @@ void OscScaleDraw::draw(QPainter *painter, const QPalette &) const
 
 	bool overlap = false;
 
-	int midLabelPos = nrMajorTicks / 2;
+	unsigned int midLabelPos = nrMajorTicks / 2;
 
 	do {
 		overlap = false;
@@ -369,20 +369,20 @@ void OscPlotZoomer::rescale()
 PlotAxisConfiguration::PlotAxisConfiguration(int axisPos, int axisIdx, DisplayPlot *plot):
 	d_axis(QwtAxisId(axisPos, axisIdx)), d_plot(plot), d_hoverCursorShape(Qt::ArrowCursor)
 {
-	Qt::CursorShape shape;
+//	Qt::CursorShape shape;
 
-	switch (axisPos) {
-		case QwtPlot::yLeft:
-			shape = Qt::CursorShape::SizeVerCursor;
-		break;
+//	switch (axisPos) {
+//		case QwtPlot::yLeft:
+//			shape = Qt::CursorShape::SizeVerCursor;
+//		break;
 
-		case QwtPlot::xBottom:
-			shape = Qt::CursorShape::SizeHorCursor;
-		break;
+//		case QwtPlot::xBottom:
+//			shape = Qt::CursorShape::SizeHorCursor;
+//		break;
 
-		default:
-			return;
-	}
+//		default:
+//			return;
+//	}
 
 	// Set cursor shape when hovering over the axis
 	//setCursorShapeOnHover(shape);
@@ -488,9 +488,9 @@ void PlotAxisConfiguration::setMouseGesturesEnabled(bool en)
 DisplayPlot::DisplayPlot(int nplots, QWidget* parent,
 			 unsigned int xNumDivs, unsigned int yNumDivs)
   : PrintablePlot(parent), d_nplots(nplots), d_stop(false),
-    d_coloredLabels(false), d_mouseGesturesEnabled(false),
     d_displayScale(1), d_xAxisNumDiv(1),
-    d_yAxisNumDiv(1)
+    d_yAxisNumDiv(1), d_coloredLabels(false),
+    d_mouseGesturesEnabled(false)
 {
   d_CurveColors << QColor("#ff7200") << QColor("#9013fe") << QColor(Qt::green)
        << QColor(Qt::cyan) << QColor(Qt::magenta)
@@ -646,7 +646,7 @@ DisplayPlot::setYaxis(double min, double max)
 {
   setAxisScale(QwtPlot::yLeft, min, max);
   if(!d_autoscale_state) {
-    for (unsigned int i = 0; i < d_zoomer.size(); ++i)
+    for (int i = 0; i < d_zoomer.size(); ++i)
 	    d_zoomer[i]->setZoomBase();
   }
 }
@@ -655,7 +655,7 @@ void
 DisplayPlot::setXaxis(double min, double max)
 {
   setAxisScale(QwtPlot::xBottom, min, max);
-  for (unsigned int i = 0; i < d_zoomer.size(); ++i)
+  for (int i = 0; i < d_zoomer.size(); ++i)
 	  d_zoomer[i]->setZoomBase();
 }
 
@@ -682,7 +682,7 @@ void DisplayPlot::setLineColor(int chnIdx, int colorIdx)
 }
 
 void
-DisplayPlot::setLineColor(int which, QColor color)
+DisplayPlot::setLineColor(unsigned int which, QColor color)
 {
     if (which < d_plot_curve.size()) {
     // Set the color of the pen
@@ -707,7 +707,7 @@ DisplayPlot::setLineColor(int which, QColor color)
 }
 
 QColor
-DisplayPlot::getLineColor(int which) const
+DisplayPlot::getLineColor(unsigned int which) const
 {
   // If that plot doesn't exist then return black.
   if (which < d_plot_curve.size())
@@ -739,7 +739,7 @@ SETUPLINE(9, 8)
 
 void
 DisplayPlot::setZoomerColor(QColor c) {
-  for (unsigned int i = 0; i < d_zoomer.size(); ++i) {
+  for (int i = 0; i < d_zoomer.size(); ++i) {
 	d_zoomer[i]->setRubberBandPen(c);
 	d_zoomer[i]->setTrackerPen(c);
   }
@@ -786,7 +786,7 @@ DisplayPlot::printWithNoBackground(const QString& toolName, bool editScaleDraw)
 {
         OscScaleDraw *scaleDraw = static_cast<OscScaleDraw *>(this->axisScaleDraw(QwtAxisId(QwtPlot::yLeft, d_activeVertAxis)));
         QStack<QColor> colors;
-        for (int i = 0; i < d_plot_curve.size(); ++i) {
+	for (unsigned int i = 0; i < d_plot_curve.size(); ++i) {
                 colors.push_back(getLineColor(i));
                 setLineColor(i, d_printColors[i]);
         }
@@ -1019,7 +1019,7 @@ DisplayPlot::onPickerPointSelected6(const QPointF & p)
 
 void DisplayPlot::zoomBaseUpdate()
 {
-	for (unsigned int i = 0; i < d_zoomer.size(); ++i)
+	for (int i = 0; i < d_zoomer.size(); ++i)
 		d_zoomer[i]->setZoomBase(true);
 }
 
@@ -1054,9 +1054,9 @@ void DisplayPlot::setVertOffset(double offset, int axisIdx)
 	vertAxes[axisIdx]->setOffset(offset);
 }
 
-double DisplayPlot::VertOffset(int axisIdx)
+double DisplayPlot::VertOffset(unsigned int axisIdx)
 {
-	if ((axisIdx >= 0) && (axisIdx < vertAxes.size()))
+	if (axisIdx < vertAxes.size())
 		return vertAxes[axisIdx]->offset();
 	return 0;
 }
@@ -1129,7 +1129,7 @@ void DisplayPlot::setDisplayScale(double value)
 
 void DisplayPlot::setActiveVertAxis(unsigned int axisIdx, bool selected)
 {
-	int numAxes = this->axesCount(QwtPlot::yLeft);
+	unsigned int numAxes = this->axesCount(QwtPlot::yLeft);
 
 	if (axisIdx >= numAxes)
 		return;
@@ -1137,7 +1137,7 @@ void DisplayPlot::setActiveVertAxis(unsigned int axisIdx, bool selected)
 	d_activeVertAxis = axisIdx;
 
 	if (d_usingLeftAxisScales && selected) {
-		for (int i = 0; i < numAxes; i++) {
+		for (unsigned int i = 0; i < numAxes; i++) {
 			this->setAxisVisible(QwtAxisId(QwtPlot::yLeft, i),
 					(i == axisIdx));
 		}
@@ -1526,7 +1526,7 @@ void DisplayPlot::setXaxisMouseGesturesEnabled(bool en)
 	horizAxis->setMouseGesturesEnabled(en);
 }
 
-void DisplayPlot::setYaxisMouseGesturesEnabled(int axisId, bool en)
+void DisplayPlot::setYaxisMouseGesturesEnabled(unsigned int axisId, bool en)
 {
 	if (axisId < vertAxes.size()) {
 		vertAxes[axisId]->setMouseGesturesEnabled(en);
