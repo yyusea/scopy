@@ -69,17 +69,17 @@ FftDisplayPlot::FftDisplayPlot(int nplots, QWidget *parent) :
 	d_stop_frequency(1000),
 	d_sampl_rate(1),
 	d_preset_sampl_rate(d_sampl_rate),
+	m_visiblePeakSearch(true),
+	d_logScaleEnabled(false),
 	d_presetMagType(MagnitudeType::DBFS),
 	d_mrkCtrl(nullptr),
-	d_emitNewMkrData(true),
-	m_visiblePeakSearch(true),
-	d_logScaleEnabled(false)
+	d_emitNewMkrData(true)
 {
 	// TO DO: Add more colors
 	d_markerColors << QColor(255, 242, 0) << QColor(210, 155, 210);
 	d_zoomer.push_back(nullptr);
 
-	for (unsigned int i = 0; i < nplots; i++) {
+	for (int i = 0; i < nplots; i++) {
 		auto plot = new QwtPlotCurve(QString("CH %1").arg(i + 1));
 
 		plot->setPen(QPen(d_CurveColors[i]));
@@ -152,8 +152,8 @@ FftDisplayPlot::FftDisplayPlot(int nplots, QWidget *parent) :
 
 FftDisplayPlot::~FftDisplayPlot()
 {
-	for (uint c = 0; c < d_nplots; c++) {
-		for (uint i = 0; i < d_markers[c].size(); i++) {
+	for (int c = 0; c < d_nplots; c++) {
+		for (int i = 0; i < d_markers[c].size(); i++) {
 			d_markers[c][i].ui->detach();
 		}
 	}
@@ -161,7 +161,7 @@ FftDisplayPlot::~FftDisplayPlot()
 	if (x_data)
 		delete[] x_data;
 
-	for (unsigned int i = 0; i < d_nplots; i++) {
+	for (int i = 0; i < d_nplots; i++) {
 		if (y_data[i])
 			delete[] y_data[i];
 		if (y_original_data[i])
@@ -225,7 +225,7 @@ void FftDisplayPlot::useLogFreq(bool use_log_freq)
 void FftDisplayPlot::plotData(const std::vector<double *> &pts,
 		uint64_t num_points)
 {
-	uint64_t halfNumPoints = num_points / 2;
+	int64_t halfNumPoints = num_points / 2;
 	bool numPointsChanged = false;
 	bool samplRateChanged = false;
 	bool magTypeChanged = false;
@@ -260,7 +260,7 @@ void FftDisplayPlot::plotData(const std::vector<double *> &pts,
 
 		x_data = new double[halfNumPoints];
 
-		for (unsigned int i = 0; i < d_nplots; i++) {
+		for (int i = 0; i < d_nplots; i++) {
 			if (y_data[i])
 				delete[] y_data[i];
 			if (y_original_data[i])
@@ -279,7 +279,7 @@ void FftDisplayPlot::plotData(const std::vector<double *> &pts,
 		}
 
 		// Resize the average objects to the new number of points
-		for (int i = 0; i < d_ch_avg_obj.size(); i++) {
+		for (unsigned int i = 0; i < d_ch_avg_obj.size(); i++) {
 			if (!d_ch_avg_obj[i])
 				continue;
 
@@ -294,7 +294,7 @@ void FftDisplayPlot::plotData(const std::vector<double *> &pts,
 	}
 
 	// We store the received data before touching it
-	for (unsigned int i = 0; i < d_nplots; i++) {
+	for (int i = 0; i < d_nplots; i++) {
 		memcpy(y_original_data[i], pts[i],
 				halfNumPoints * sizeof(double));
 	}
@@ -371,7 +371,7 @@ void FftDisplayPlot::averageDataAndComputeMagnitude(std::vector<double *>
 {
 	std::vector<double *> source;
 
-	for (unsigned int i = 0; i < d_nplots; i++) {
+	for (int i = 0; i < d_nplots; i++) {
 		bool needs_dB_avg = false;
 
 		switch (d_ch_average_type[i]) {
@@ -389,7 +389,7 @@ void FftDisplayPlot::averageDataAndComputeMagnitude(std::vector<double *>
 			break;
 		}
 
-		for (int s = 0; s < nb_points; s++) {
+		for (uint64_t s = 0; s < nb_points; s++) {
 			//dB Full-Scale
 			switch (d_magType) {
 			case DBFS:
@@ -518,7 +518,7 @@ void FftDisplayPlot::setAverage(uint chIdx, enum AverageType avg_type,
 
 void FftDisplayPlot::resetAverageHistory()
 {
-	for (int i = 0; i < d_ch_avg_obj.size(); i++)
+	for (unsigned int i = 0; i < d_ch_avg_obj.size(); i++)
 		if (d_ch_avg_obj[i])
 			d_ch_avg_obj[i]->reset();
 }
@@ -745,7 +745,8 @@ void FftDisplayPlot::calculate_fixed_markers(int chn)
 
 uint FftDisplayPlot::peakCount(uint chIdx) const
 {
-	if (chIdx >= d_peaks.size())
+	unsigned int size = d_peaks.size();
+	if (chIdx >= size)
 		return 0;
 
 	return d_peaks[chIdx].size();
@@ -753,10 +754,11 @@ uint FftDisplayPlot::peakCount(uint chIdx) const
 
 void FftDisplayPlot::setPeakCount(uint chIdx, uint count)
 {
-	if (chIdx >= d_peaks.size())
+	unsigned int size = d_peaks.size();
+	if (chIdx >= size)
 		return;
 
-	if (d_peaks[chIdx].size() == count)
+	if (size == count)
 		return;
 
 
@@ -779,12 +781,14 @@ uint FftDisplayPlot::markerCount(uint chIdx) const
 
 void FftDisplayPlot::setMarkerCount(uint chIdx, uint count)
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return;
 	}
 
-	if (d_markers[chIdx].size() == count) {
+	size = d_markers[chIdx].size();
+	if (size == count) {
 		return;
 	}
 
@@ -805,12 +809,14 @@ bool FftDisplayPlot::markerEnabled(uint chIdx, uint mkIdx) const
 
 bool FftDisplayPlot:: markerVisible(uint chIdx, uint mkIdx) const
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return false;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return false;
 	}
@@ -820,12 +826,14 @@ bool FftDisplayPlot:: markerVisible(uint chIdx, uint mkIdx) const
 
 void FftDisplayPlot::setMarkerVisible(uint chIdx, uint mkIdx, bool en)
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return;
 	}
@@ -835,12 +843,14 @@ void FftDisplayPlot::setMarkerVisible(uint chIdx, uint mkIdx, bool en)
 
 void FftDisplayPlot::setMarkerEnabled(uint chIdx, uint mkIdx, bool en)
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return;
 	}
@@ -874,12 +884,14 @@ void FftDisplayPlot::setMarkerEnabled(uint chIdx, uint mkIdx, bool en)
 
 double FftDisplayPlot::markerFrequency(uint chIdx, uint mkIdx) const
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return 0;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return 0;
 	}
@@ -889,12 +901,14 @@ double FftDisplayPlot::markerFrequency(uint chIdx, uint mkIdx) const
 
 double FftDisplayPlot::markerMagnitude(uint chIdx, uint mkIdx) const
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return 0;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return 0;
 	}
@@ -904,12 +918,14 @@ double FftDisplayPlot::markerMagnitude(uint chIdx, uint mkIdx) const
 
 void FftDisplayPlot::setMarkerAtFreq(uint chIdx, uint mkIdx, double freq)
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return;
 	}
@@ -1060,8 +1076,8 @@ int FftDisplayPlot::getMarkerPos(const QList<marker>& marker_list,
 void FftDisplayPlot::onMrkCtrlMarkerSelected(std::shared_ptr<SpectrumMarker>
 	&marker)
 {
-	for (uint i = 0; i < d_nplots; i++) {
-		for (uint j = 0; j < d_markers[i].size(); j++) {
+	for (int i = 0; i < d_nplots; i++) {
+		for (int j = 0; j < d_markers[i].size(); j++) {
 			if (d_markers[i][j].ui == marker) {
 				marker->setSelected(true);
 				Q_EMIT markerSelected(i, j);
@@ -1077,7 +1093,7 @@ void FftDisplayPlot::onMrkCtrlMarkerPosChanged(std::shared_ptr<SpectrumMarker> &
 	int markerPos = 0;
 	uint chn = -1;
 
-	for (uint i = 0; i < d_nplots; i++) {
+	for (int i = 0; i < d_nplots; i++) {
 		markerPos = getMarkerPos(d_markers[i], marker);
 		if (markerPos >= 0) {
 			chn = i;
@@ -1123,7 +1139,7 @@ void FftDisplayPlot::onMrkCtrlMarkerReleased(std::shared_ptr<SpectrumMarker>
 	int markerPos = -1;
 	uint chn = -1;
 
-	for (uint i = 0; i < d_nplots; i++) {
+	for (int i = 0; i < d_nplots; i++) {
 		markerPos = getMarkerPos(d_markers[i], marker);
 		if (markerPos >= 0) {
 			chn = i;
@@ -1143,8 +1159,8 @@ void FftDisplayPlot::onMrkCtrlMarkerReleased(std::shared_ptr<SpectrumMarker>
 
 void FftDisplayPlot::selectMarker(uint chIdx, uint mkIdx)
 {
-	for (uint i = 0; i < d_nplots; i++) {
-		for (uint j = 0; j < d_markers[i].size(); j++) {
+	for (int i = 0; i < d_nplots; i++) {
+		for (int j = 0; j < d_markers[i].size(); j++) {
 			d_markers[i][j].ui->setSelected(false);
 		}
 	}
@@ -1155,12 +1171,14 @@ void FftDisplayPlot::selectMarker(uint chIdx, uint mkIdx)
 
 int FftDisplayPlot::markerType(uint chIdx, uint mkIdx) const
 {
-	if (chIdx >= d_markers.size()) {
+	unsigned int size = d_markers.size();
+	if (chIdx >= size) {
 		qDebug() << "Invalid channel index!";
 		return -1;
 	}
 
-	if (mkIdx >= d_markers[chIdx].size()) {
+	size = d_markers[chIdx].size();
+	if (mkIdx >= size) {
 		qDebug() << "Invalid marker index";
 		return -1;
 	}
@@ -1194,7 +1212,7 @@ void FftDisplayPlot::setMagnitudeType(enum MagnitudeType type)
 void FftDisplayPlot::recalculateMagnitudes()
 {
 	// Check if at least one acquisition has been made
-	for (unsigned int i = 0; i < d_nplots; i++) {
+	for (int i = 0; i < d_nplots; i++) {
 		if (!y_data[i])
 			return;
 	}
