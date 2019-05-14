@@ -117,9 +117,11 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx,
 	ui(new Ui::SignalGenerator),
 	time_block_data(new adiscope::time_block_data),
 	dacs(dacs),
+	currentChannel(0),
+	sample_rate(0),
+	nb_points(NB_POINTS),
 	nr_of_periods(2),
-	currentChannel(0), sample_rate(0),
-	settings_group(new QButtonGroup(this)),nb_points(NB_POINTS),
+	settings_group(new QButtonGroup(this)),
 	channels_group(new QButtonGroup(this))
 {
 	zoomT1=0;
@@ -744,8 +746,8 @@ void SignalGenerator::fileChannelChanged(int value)
 {
 	auto ptr = getCurrentData();
 
-	if (ptr->file_channel != (int) value) {
-		ptr->file_channel = (int) value;
+	if (ptr->file_channel != static_cast<unsigned long>(value)) {
+		ptr->file_channel = static_cast<unsigned long>(value);
 		this->ui->label_size->setText(QString::number(
 		                                      ptr->file_nr_of_samples[ptr->file_channel]) +
 					      tr(" samples"));
@@ -1090,7 +1092,7 @@ bool SignalGenerator::loadParametersFromFile(
 			f.seek(f.pos()+chunk.size);
 		}
 
-		for (auto i=0; i<ptr->file_nr_of_channels; i++) {
+		for (unsigned long i=0; i<ptr->file_nr_of_channels; i++) {
 			ptr->file_channel_names.push_back("Channel " + QString::number(i));
 			ptr->file_nr_of_samples.push_back(nr_of_samples);
 		}
@@ -1116,7 +1118,7 @@ bool SignalGenerator::loadParametersFromFile(
 			ptr->file_sr = fileManager->getSampleRate();
 
 		ptr->file_channel=0; // autoselect channel 0
-		for (auto i=0; i<ptr->file_nr_of_channels; i++) {
+		for (unsigned long i=0; i<ptr->file_nr_of_channels; i++) {
 			ptr->file_channel_names.push_back("Column " + QString::number(i));
 			ptr->file_nr_of_samples.push_back(fileManager->getNrOfSamples());
 		}
@@ -1217,7 +1219,7 @@ void SignalGenerator::loadFileFromPath(QString filename){
     ui->label_format->setText(ptr->file_message);
 
     if (ptr->file_channel_names.isEmpty()) {
-        for (auto i=0; i<ptr->file_nr_of_channels; i++) {
+	for (unsigned long i=0; i<ptr->file_nr_of_channels; i++) {
             ui->fileChannel->addItem(QString::number(i));
         }
     } else {
@@ -1547,7 +1549,7 @@ void SignalGenerator::loadFileChannelData(QWidget *obj)
 		                   ptr->file_channel_names[ptr->file_channel].toStdString().c_str());
 		const double *xData = static_cast<const double *>(matvar->data) ;
 
-		for (auto i=0; i<ptr->file_nr_of_samples[ptr->file_channel]; ++i) {
+		for (unsigned int i=0; i<ptr->file_nr_of_samples[ptr->file_channel]; ++i) {
 			ptr->file_data.push_back(xData[i]);
 		}
 
@@ -1644,7 +1646,7 @@ gr::basic_block_sptr SignalGenerator::getSource(QWidget *obj,
 					ptr->file_message=QString::fromLocal8Bit(e.what());
 					fs=blocks::null_source::make(sizeof(float));
 				}
-				for (auto i=0; i<ptr->file_nr_of_channels; i++) {
+				for (unsigned long i=0; i<ptr->file_nr_of_channels; i++) {
 					if (i==ptr->file_channel) {
 						top->connect(fs,i,buffer,0);
 					} else {
@@ -2224,8 +2226,8 @@ size_t SignalGenerator::get_samples_count(const struct iio_device *dev,
 			/*if (ptr->type == SIGNAL_TYPE_WAVEFORM
 					&& ptr->waveform == SG_SIN_WAVE
 					&& ratio < 2.5)
-				return 0; /* rate too low */
-			//else
+				return 0; // rate too low
+			//else */
 
 			// for less than max sample rates, generate at least 10 samples per period
 			if (ratio < 10.0 && rate < max_sample_rate)
