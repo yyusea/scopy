@@ -128,7 +128,8 @@ int SinkManager::indexOfSink(const std::string& name)
 {
 	int pos = find_if(d_sinkList.begin(), d_sinkList.end(), [&name](Sink& s) {return s.name() == name;}) - d_sinkList.begin();
 
-	if (pos >= d_sinkList.size())
+	int size = d_sinkList.size();
+	if (pos >= size)
 		pos = -1;
 
 	return pos;
@@ -136,7 +137,8 @@ int SinkManager::indexOfSink(const std::string& name)
 
 int SinkManager::sinkFirstChannelPos(const std::string& name)
 {
-	int i, index = 0;
+	int index = 0;
+	unsigned int i = 0;
 
 	for (i = 0; i < d_sinkList.size(); ++i) {
 		if (d_sinkList[i].name() == name)
@@ -234,7 +236,7 @@ TimeDomainDisplayPlot::~TimeDomainDisplayPlot()
 	delete d_trigger_lines[0];
 	delete d_trigger_lines[1];
 
-	for (int i = 0; i < d_ref_ydata.size(); ++i) {
+	for (unsigned int i = 0; i < d_ref_ydata.size(); ++i) {
 		delete[] d_ref_ydata[i];
 	}
 
@@ -261,7 +263,7 @@ TimeDomainDisplayPlot::plotNewData(const std::string &sender,
       Sink *sink = d_sinkManager.sink((unsigned int)sinkIndex);
       int start = d_sinkManager.sinkFirstChannelPos(sender);
       unsigned int sinkNumChannels = sink->numChannels();
-      unsigned long long sinkNumPoints = sink->channelsDataLength();
+      int64_t sinkNumPoints = sink->channelsDataLength();
       bool reset_x_axis_points = d_sink_reset_x_axis_pts[sinkIndex];
 
       if(numDataPoints != sinkNumPoints){
@@ -272,7 +274,7 @@ TimeDomainDisplayPlot::plotNewData(const std::string &sender,
 	d_xdata[sinkIndex] = new double[numDataPoints];
 
 	int ref_offset = countReferenceWaveform(start);
-	for(int i = start; i < start + sinkNumChannels; i++) {
+	for(unsigned int i = start; i < start + sinkNumChannels; i++) {
 	  delete[] d_ydata[i];
 	  d_ydata[i] = new double[numDataPoints];
 
@@ -285,7 +287,7 @@ TimeDomainDisplayPlot::plotNewData(const std::string &sender,
           reset_x_axis_points = false;
       }
 
-      for(int i = 0; i < sinkNumChannels; i++) {
+      for(unsigned int i = 0; i < sinkNumChannels; i++) {
 	if(d_semilogy) {
 	  for(int n = 0; n < numDataPoints; n++)
 	    d_ydata[start + i][n] = fabs(dataPoints[i][n]);
@@ -295,7 +297,7 @@ TimeDomainDisplayPlot::plotNewData(const std::string &sender,
 	}
       }
 
-      for (int i = 0; i < d_plot_curve.size(); i++)
+      for (unsigned int i = 0; i < d_plot_curve.size(); i++)
 		d_plot_curve.at(i)->show();
       d_curves_hidden = false;
 
@@ -516,7 +518,7 @@ TimeDomainDisplayPlot::_resetXAxisPoints(double*& xAxis, unsigned long long numP
 {
   double delt = 1.0 / sampleRate;
 
-  for (long loc = 0; loc < numPoints; loc++)
+  for (unsigned int loc = 0; loc < numPoints; loc++)
     xAxis[loc] = (d_data_starting_point + loc) * delt;
 
 
@@ -840,7 +842,7 @@ TimeDomainDisplayPlot::setTagBackgroundStyle(Qt::BrushStyle b)
 
 void TimeDomainDisplayPlot::setZoomerEnabled(bool en)
 {
-	for (unsigned int i = 0; i < d_zoomer.size(); ++i)
+	for (int i = 0; i < d_zoomer.size(); ++i)
 		d_zoomer[i]->setEnabled(en);
 }
 
@@ -856,7 +858,7 @@ void TimeDomainDisplayPlot::setZoomerVertAxis(int index)
 	if (index < -1 || index >= axesCount(QwtPlot::yLeft))
 		return;
 
-	for (unsigned int i = 0; i < d_zoomer.size(); ++i)
+	for (int i = 0; i < d_zoomer.size(); ++i)
 		if (d_zoomer[i]->isEnabled())
 			d_zoomer[i]->setTrackerMode(
 					(i == index) ? QwtPicker::AlwaysOn : QwtPicker::AlwaysOff);
@@ -961,7 +963,7 @@ int TimeDomainDisplayPlot::countReferenceWaveform(int position)
 	QwtPlotCurve *curve = Curve(curveIdx);
 
 	int count = 0;
-	for (int i = 0; i < d_plot_curve.size(); ++i)
+	for (unsigned int i = 0; i < d_plot_curve.size(); ++i)
 		if (d_plot_curve[i] == curve) {
 			return count;
 		} else if (isReferenceWaveform(d_plot_curve[i])) {
@@ -1015,7 +1017,7 @@ void TimeDomainDisplayPlot::unregisterReferenceWaveform(QString name)
 	QwtPlotCurve *curve = d_ref_curves[name];
 	d_ref_curves.remove(name);
 	int pos = 0;
-	int i = 0;
+	unsigned int i = 0;
 	for (i = 0; i < d_plot_curve.size(); i++) {
 		if (isReferenceWaveform(Curve(i))) {
 			if (Curve(i)->title().text() == name) {
@@ -1159,7 +1161,7 @@ bool TimeDomainDisplayPlot::registerSink(std::string sinkUniqueNme, unsigned int
 		int sinkIndex = d_sinkManager.indexOfSink(sinkUniqueNme);
 		d_xdata.push_back(new double[channelsDataLength]);
 
-		for (int i = 0; i < numChannels; i++) {
+		for (unsigned int i = 0; i < numChannels; i++) {
 			int n = i + numCurves;
 			d_ydata.push_back(new double[channelsDataLength]);
 			memset(d_ydata[n], 0x0, channelsDataLength * sizeof(double));
@@ -1298,7 +1300,7 @@ void TimeDomainDisplayPlot::cleanUpJustBeforeChannelRemoval(int)
 
 void TimeDomainDisplayPlot::cancelZoom()
 {
-	for (unsigned int i = 0; i < d_zoomer.size(); ++i) {
+	for (int i = 0; i < d_zoomer.size(); ++i) {
 		OscPlotZoomer *zoomer = static_cast<OscPlotZoomer *>(d_zoomer[i]);
 		zoomer->resetZoom();
 	}
@@ -1311,18 +1313,20 @@ long TimeDomainDisplayPlot::dataStartingPoint() const
 
 void TimeDomainDisplayPlot::resetXaxisOnNextReceivedData()
 {
-	for (int i = 0; i < d_sink_reset_x_axis_pts.size(); i++)
+	for (unsigned int i = 0; i < d_sink_reset_x_axis_pts.size(); i++)
 		d_sink_reset_x_axis_pts[i] = true;
 }
 
 void TimeDomainDisplayPlot::setDataStartingPoint(long pos)
 {
 	d_data_starting_point = pos;
+
 }
 
 void TimeDomainDisplayPlot::setLineWidthF(int which, qreal widthF)
 {
-  if (which < d_plot_curve.size()) {
+  int size = d_plot_curve.size();
+  if (which < size) {
     QPen pen(d_plot_curve[which]->pen());
     pen.setWidthF(widthF);
     d_plot_curve[which]->setPen(pen);
@@ -1331,7 +1335,8 @@ void TimeDomainDisplayPlot::setLineWidthF(int which, qreal widthF)
 
 qreal TimeDomainDisplayPlot::getLineWidthF(int which) const
 {
-  if (which < d_plot_curve.size())
+  int size = d_plot_curve.size();
+  if (which < size)
     return d_plot_curve[which]->pen().widthF();
   else
     return 0;
@@ -1339,7 +1344,7 @@ qreal TimeDomainDisplayPlot::getLineWidthF(int which) const
 
 void TimeDomainDisplayPlot::hideCurvesUntilNewData()
 {
-	for (int i = 0; i < d_plot_curve.size(); i++)
+	for (unsigned int i = 0; i < d_plot_curve.size(); i++)
 		d_plot_curve.at(i)->hide();
 	d_curves_hidden = true;
 }
