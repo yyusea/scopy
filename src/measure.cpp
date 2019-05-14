@@ -193,14 +193,14 @@ namespace adiscope {
 			m_posCrossFound(false),
 			m_negCrossFound(false),
 			m_crossed(false),
-			m_posCrossPoint(0),
-			m_negCrossPoint(0),
 			m_level(level),
 			m_hysteresis_span(hysteresis_span),
 			m_low_level(level - hysteresis_span / 2),
 			m_high_level(level + hysteresis_span / 2),
-			m_name(name),
-			m_externList(NULL)
+			m_posCrossPoint(0),
+			m_negCrossPoint(0),
+			m_externList(NULL),
+			m_name(name)
 		{
 		}
 
@@ -355,9 +355,9 @@ Measure::Measure(int channel, double *buffer, size_t length):
 	m_adc_bit_count(0),
 	m_cross_level(0),
 	m_hysteresis_span(0),
+	m_gatingEnabled(false),
 	m_histogram(nullptr),
-	m_cross_detect(nullptr),
-	m_gatingEnabled(false)
+	m_cross_detect(nullptr)
 {
 
 	// Create a set of measurements
