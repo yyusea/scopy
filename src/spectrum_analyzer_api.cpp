@@ -97,7 +97,8 @@ int SpectrumMarker_API::type()
 
 void SpectrumMarker_API::setType(int val)
 {
-	if (val > SpectrumAnalyzer::markerTypes.size()) {
+	int size = SpectrumAnalyzer::markerTypes.size();
+	if (val > size) {
 		val = 0;
 	}
 

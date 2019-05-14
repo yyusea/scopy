@@ -104,22 +104,22 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 	     parent),
 	ui(new Ui::SpectrumAnalyzer),
 	marker_selector(new DbClickButtons(this)),
-	fft_plot(nullptr),
 	settings_group(new QButtonGroup(this)),
 	channels_group(new QButtonGroup(this)),
+	fft_plot(nullptr),
 	adc(adc),
 	adc_name(ctx ? filt->device_name(TOOL_SPECTRUM_ANALYZER) : ""),
 	crt_channel_id(0),
+	searchVisiblePeaks(true),
 	crt_peak(0),
 	max_peak_count(10),
-	fft_size(32768),
-	searchVisiblePeaks(true),
 	sample_rate(100e6),
 	sample_rate_divider(1),
-	marker_menu_opened(false),
+	fft_size(32768),
 	bin_sizes({
 	256, 512, 1024, 2048, 4096, 8192, 16384, 32768
-})
+	}),
+	marker_menu_opened(false)
 
 {
 
@@ -133,7 +133,7 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 
 		auto adc_channels = adc->adcChannelList();
 
-		for (unsigned int i = 0; i < adc_channels.size(); i++) {
+		for (int i = 0; i < adc_channels.size(); i++) {
 			const char *id = iio_channel_get_name(adc_channels[i]);
 
 			if (!id) {
@@ -199,7 +199,7 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 	// Disable mouse interactions with the axes until they are in a working state
 	fft_plot->setXaxisMouseGesturesEnabled(false);
 
-	for (uint i = 0; i < num_adc_channels; i++) {
+	for (int i = 0; i < num_adc_channels; i++) {
 		fft_plot->setYaxisMouseGesturesEnabled(i, false);
 	}
 
@@ -287,7 +287,7 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 	range->setMaxValue(200);
 
 	// Configure plot peak capabilities
-	for (uint i = 0; i < num_adc_channels; i++) {
+	for (int i = 0; i < num_adc_channels; i++) {
 		fft_plot->setPeakCount(i, max_peak_count);
 	}
 
@@ -418,7 +418,7 @@ SpectrumAnalyzer::~SpectrumAnalyzer()
 			iio->lock();
 		}
 
-		for (unsigned int i = 0; i < num_adc_channels; i++) {
+		for (int i = 0; i < num_adc_channels; i++) {
 			iio->disconnect(fft_ids[i]);
 		}
 
@@ -614,7 +614,7 @@ void SpectrumAnalyzer::build_gnuradio_block_chain()
 	if (canConvRawToVolts) {
 		auto m2k_adc = dynamic_pointer_cast<M2kAdc>(adc);
 
-		for (int i = 0; i < adc->numAdcChannels(); i++) {
+		for (unsigned int i = 0; i < adc->numAdcChannels(); i++) {
 			double corr_gain = 1.0;
 			double hw_gain = 1.0;
 
@@ -762,7 +762,7 @@ void SpectrumAnalyzer::on_comboBox_window_currentIndexChanged(const QString& s)
 	}
 }
 
-void SpectrumAnalyzer::on_spinBox_averaging_valueChanged(int n)
+void SpectrumAnalyzer::on_spinBox_averaging_valueChanged(unsigned int n)
 {
 	int crt_channel = channelIdOfOpenedSettings();
 
@@ -818,7 +818,7 @@ void SpectrumAnalyzer::updateChannelSettingsPanel(unsigned int id)
 ChannelWidget * SpectrumAnalyzer::getChannelWidgetAt(unsigned int id)
 {
 	for (int i = 0; i < channels.size(); ++i) {
-		if (channels.at(i).get()->widget()->id() == id)
+		if (channels.at(i).get()->widget()->id() == static_cast<int>(id))
 			return channels.at(i).get()->widget();
 	}
 	return nullptr;
@@ -856,7 +856,7 @@ void SpectrumAnalyzer::updateMarkerMenu(unsigned int id)
 
 		marker_selector->blockSignals(true);
 
-		for (int i = 0; i < fft_plot->markerCount(id); i++) {
+		for (unsigned int i = 0; i < fft_plot->markerCount(id); i++) {
 			marker_selector->setButtonChecked(i,
 							  fft_plot->markerEnabled(id, i));
 		}
@@ -905,7 +905,7 @@ void SpectrumAnalyzer::onChannelEnabled(bool en)
 		fft_plot->DetachCurve(cw->id());
 	}
 
-	for (int i = 0; i < fft_plot->markerCount(cw->id()); i++) {
+	for (unsigned int i = 0; i < fft_plot->markerCount(cw->id()); i++) {
 		if (fft_plot->markerEnabled(cw->id(), i)) {
 			fft_plot->setMarkerVisible(cw->id(), i, en);
 		}
@@ -918,7 +918,7 @@ void SpectrumAnalyzer::onChannelEnabled(bool en)
 
 void SpectrumAnalyzer::updateRunButton(bool ch_en)
 {
-	for (unsigned int i = 0; !ch_en && i < num_adc_channels; i++) {
+	for (int i = 0; !ch_en && i < num_adc_channels; i++) {
 		QWidget *parent = ui->channelsList->itemAt(i)->widget();
 		QCheckBox *box = parent->findChild<QCheckBox *>("box");
 		ch_en = box->isChecked();
@@ -1228,7 +1228,7 @@ void SpectrumAnalyzer::onPlotNewMarkerData()
 
 	// Update the markers in the marker table
 	for (int c = 0; c < num_adc_channels; c++) {
-		for (int m = 0; m < fft_plot->markerCount(c); m++) {
+		for (unsigned int m = 0; m < fft_plot->markerCount(c); m++) {
 			if (fft_plot->markerEnabled(c, m)) {
 				int mkType = fft_plot->markerType(c, m);
 				ui->markerTable->updateMarker(m, c,
@@ -1242,11 +1242,11 @@ void SpectrumAnalyzer::onPlotNewMarkerData()
 
 void SpectrumAnalyzer::onPlotMarkerSelected(uint chIdx, uint mkIdx)
 {
-	if (crt_channel_id != chIdx) {
+	if (crt_channel_id != static_cast<int>(chIdx)) {
 		channels[chIdx]->widget()->nameButton()->setChecked(true);
 	}
 
-	if (marker_selector->selectedButton() != mkIdx) {
+	if (marker_selector->selectedButton() != static_cast<int>(mkIdx)) {
 		marker_selector->setSelectedButton(mkIdx);
 		updateWidgetsRelatedToMarker(mkIdx);
 	}
@@ -1528,7 +1528,7 @@ SpectrumChannel::calcCoherentPowerGain(const std::vector<float>& win) const
 {
 	float sum = 0;
 
-	for (int i = 0; i < win.size(); i++) {
+	for (unsigned int i = 0; i < win.size(); i++) {
 		sum += win[i];
 	}
 
@@ -1537,7 +1537,7 @@ SpectrumChannel::calcCoherentPowerGain(const std::vector<float>& win) const
 
 void SpectrumChannel::scaletFftWindow(std::vector<float>& win, float gain)
 {
-	for (int i = 0; i < win.size(); i++) {
+	for (unsigned int i = 0; i < win.size(); i++) {
 		win[i] *= gain;
 	}
 }

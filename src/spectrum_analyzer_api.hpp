@@ -81,7 +81,7 @@ class SpectrumChannel_API : public ApiObject
 public:
 	explicit SpectrumChannel_API(SpectrumAnalyzer *sp,
 				     boost::shared_ptr<SpectrumChannel> spch) :
-		ApiObject(), spch(spch),sp(sp) {}
+		ApiObject(), sp(sp), spch(spch) {}
 	~SpectrumChannel_API() {}
 
 	bool enabled();
@@ -119,7 +119,7 @@ class SpectrumMarker_API :public ApiObject
 	int m_type;
 public:
 	explicit SpectrumMarker_API(SpectrumAnalyzer *sp,int chid, int mkid) :
-		ApiObject(), sp(sp), m_mkid(mkid), m_chid(chid), m_type(0) {}
+		ApiObject(), m_chid(chid), m_mkid(mkid), m_type(0), sp(sp) {}
 	~SpectrumMarker_API() {}
 
 	int chId();
