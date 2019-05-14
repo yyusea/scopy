@@ -157,14 +157,13 @@ NetworkAnalyzer::NetworkAnalyzer(struct iio_context *ctx, Filter *filt,
 				 ToolLauncher *parent) :
 	Tool(ctx, runButton, new NetworkAnalyzer_API(this), "Network Analyzer", parent),
 	ui(new Ui::NetworkAnalyzer),
-	adc_dev(adc_dev),
-	d_cursorsEnabled(false),
-	stop(true), amp1(nullptr), amp2(nullptr),
-	wheelEventGuard(nullptr), wasChecked(false),
-	dacs(dacs), justStarted(false),
-	iterationsThreadCanceled(false), iterationsThreadReady(false),
-	iterationsThread(nullptr), autoAdjustGain(true),
-	filterDc(false)
+	amp1(nullptr), amp2(nullptr),
+	adc_dev(adc_dev), dacs(dacs),
+	wasChecked(false), iterationsThreadCanceled(false),
+	iterationsThreadReady(false), iterationsThread(nullptr),
+	filterDc(false), justStarted(false),
+	autoAdjustGain(true), d_cursorsEnabled(false), wheelEventGuard(nullptr),
+	stop(true)
 {
 	iio = iio_manager::get_instance(ctx,
 					filt->device_name(TOOL_NETWORK_ANALYZER, 2));
@@ -1525,6 +1524,10 @@ void NetworkAnalyzer::configHwForNetworkAnalyzing()
 	if (m2k_adc) {
 		iio_device_attr_write_longlong(m2k_adc->iio_adc_dev(),
 			"oversampling_ratio", 1);
+
+		for (unsigned int i = 0; i < m2k_adc->numAdcChannels(); ++i) {
+			m2k_adc->setChnHwOffset(i, 0);
+		}
 	}
 }
 

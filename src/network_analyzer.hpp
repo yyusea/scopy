@@ -153,9 +153,9 @@ private:
 	QVector<networkIteration> iterations;
 	QVector<NetworkIterationStats> iterationStats;
 
-	boost::thread *iterationsThread;
 	bool iterationsThreadCanceled;
 	bool iterationsThreadReady;
+	boost::thread *iterationsThread;
 
 	bool isIterationsThreadReady();
 	bool isIterationsThreadCanceled();
