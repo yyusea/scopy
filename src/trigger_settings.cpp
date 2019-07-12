@@ -51,7 +51,8 @@ TriggerSettings::TriggerSettings(std::shared_ptr<GenericAdc> adc,
 	current_channel(0),
 	temporarily_disabled(false),
 	adc_running(false),
-	trigger_raw_delay(0)
+	trigger_raw_delay(0),
+	daisyChainCompensation(0)
 {
 	ui->setupUi(this);
 
@@ -90,6 +91,10 @@ TriggerSettings::TriggerSettings(std::shared_ptr<GenericAdc> adc,
 			0, adc_range.second / 10);
 		setTriggerLevelRange(current_channel, adc_range);
 		setTriggerHystRange(current_channel, hyst_range);
+		if(trigger->hasExternalTriggerIn())
+			trigger->setExternalDirection(0,HardwareTrigger::direction::TRIGGER_IN);
+		if(trigger->hasExternalTriggerOut())
+			trigger->setExternalDirection(1,HardwareTrigger::direction::TRIGGER_OUT);
 	}
 
 	connect(trigger_level, SIGNAL(valueChanged(double)),
@@ -112,11 +117,16 @@ TriggerSettings::TriggerSettings(std::shared_ptr<GenericAdc> adc,
 	on_cmb_extern_condition_currentIndexChanged(0);
 	ui->cmb_analog_extern->setCurrentIndex(0);
 	on_cmb_analog_extern_currentIndexChanged(0);
+	if(trigger->hasExternalTriggerIn())
+		ui->cmb_extern_src->addItem("External Trigger In");
+	if(trigger->hasCrossInstrumentTrigger())
+		ui->cmb_extern_src->addItem("Logic Analyzer");
 	trigger_level->setValue(0);
 	m_ac_coupled = false;
 	trigger_hysteresis->setValue(50e-3);
 	MouseWheelWidgetGuard *wheelEventGuard = new MouseWheelWidgetGuard(this);
 	wheelEventGuard->installEventRecursively(this);
+
 }
 
 TriggerSettings::~TriggerSettings()
@@ -142,6 +152,11 @@ bool TriggerSettings::digitalEnabled() const
 	return ui->extern_en->isChecked();
 }
 
+bool TriggerSettings::externalOutEnabled() const
+{
+	return ui->extern_to_en->isChecked();
+}
+
 double TriggerSettings::level() const
 {
 	return trigger_level->value();
@@ -155,6 +170,15 @@ long long TriggerSettings::triggerDelay() const
 double TriggerSettings::dcLevel() const
 {
 	return trigg_configs[current_channel].dc_level;
+}
+
+void TriggerSettings::setDaisyChainCompensation()
+{
+	const long long DELAY_PER_DEVICE = 23;
+	if(ui->spin_daisyChain->isEnabled())
+		daisyChainCompensation = ui->spin_daisyChain->value() * DELAY_PER_DEVICE; // if not enabled -> compensation 0
+	else
+		daisyChainCompensation = 0;
 }
 
 void TriggerSettings::setTriggerDelay(long long raw_delay)
@@ -205,6 +229,11 @@ void TriggerSettings::setTriggerHysteresis(double hyst)
 		trigg_configs[current_channel].hyst_val = hyst;
 	}
 }
+/*
+void TriggerSettings::on_cmb_extern_src_currentIndexChanged(int index)
+{
+
+}*/
 
 void TriggerSettings::on_cmb_source_currentIndexChanged(int index)
 {
@@ -263,8 +292,16 @@ void TriggerSettings::on_extern_en_toggled(bool checked)
 	HardwareTrigger::mode mode = determineTriggerMode(
 				ui->intern_en->isChecked(), checked);
 	mode_hw_write(mode);
-
+	setDaisyChainCompensation();
 	ui_reconf_on_extern_toggled(checked);
+}
+
+
+void TriggerSettings::on_extern_to_en_toggled(bool checked)
+{
+	enableExternalTriggerOut(checked);
+	ui->external_to_controls->setEnabled(checked);
+	setTriggerDelay(trigger_raw_delay);
 }
 
 HardwareTrigger::mode TriggerSettings::determineTriggerMode(bool intern_checked,
@@ -290,6 +327,15 @@ HardwareTrigger::mode TriggerSettings::determineTriggerMode(bool intern_checked,
 	}
 
 	return mode;
+}
+
+void TriggerSettings::enableExternalTriggerOut(bool enabled)
+{
+	const int TRIGGER_OUT_PIN = 1;
+	if(enabled)
+		trigger->setExternalOutSelect(TRIGGER_OUT_PIN, HardwareTrigger::out_select::trigger_adc);
+	else
+		trigger->setExternalOutSelect(TRIGGER_OUT_PIN, HardwareTrigger::out_select::sw_trigger);
 }
 
 void TriggerSettings::ui_reconf_on_intern_toggled(bool checked)
@@ -459,6 +505,17 @@ void TriggerSettings::write_ui_settings_to_hawrdware()
 	delay_hw_write(trigger_raw_delay);
 }
 
+void TriggerSettings::setupExternalTriggerDirection()
+{
+	try {
+		trigger->setExternalDirection(0,HardwareTrigger::direction::TRIGGER_IN);
+		trigger->setExternalDirection(1,HardwareTrigger::direction::TRIGGER_OUT);
+	}
+	catch (std::exception& e) {
+		qDebug() << e.what();
+	}
+}
+
 void TriggerSettings:: delay_hw_write(long long raw_delay)
 {
 	if (adc_running) {
@@ -548,7 +605,12 @@ void TriggerSettings:: mode_hw_write(int mode)
 	}
 }
 
-void TriggerSettings:: source_hw_write(int source)
+void TriggerSettings::on_cmb_extern_src_currentIndexChanged(QString str)
+{
+
+}
+
+void TriggerSettings::source_hw_write(int source)
 {
 	if (adc_running) {
 		try {
@@ -558,4 +620,10 @@ void TriggerSettings:: source_hw_write(int source)
 			qDebug() << e.what();
 		}
 	}
+}
+
+void adiscope::TriggerSettings::on_spin_daisyChain_valueChanged(int arg1)
+{
+    setDaisyChainCompensation();
+    setTriggerDelay(trigger_raw_delay);
 }

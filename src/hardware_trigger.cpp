@@ -32,6 +32,19 @@ QVector<QString> HardwareTrigger::lut_trigg_mode = {
 	"!digital_XOR_analog",
 };
 
+QVector<QString> HardwareTrigger::lut_digital_out_direction = {
+	"in",
+	"out"
+};
+
+QVector<QString> HardwareTrigger::lut_digital_out_select= {
+	"sw-trigger",
+	"trigger-i-same-chn",
+	"trigger-i-swap-chn",
+	"trigger-adc",
+	"trigger-in",
+};
+
 // This is still not generic. It is specific to only 2 channels!
 QVector<QString> HardwareTrigger::lut_trigg_source = {
 	"a",
@@ -111,6 +124,8 @@ HardwareTrigger::HardwareTrigger(struct iio_device *trigg_dev) :
 	if (!m_delay_trigger) {
 		throw std::runtime_error("no delay trigger available");
 	}
+
+
 	setStreamingFlag(false);
 }
 
@@ -181,6 +196,44 @@ HardwareTrigger::condition HardwareTrigger::digitalCondition(uint chnIdx)
 	}
 
 	return static_cast<condition>(it - lut_digital_trigg_cond.begin());
+}
+
+
+
+bool HardwareTrigger::hasExternalTriggerOut()
+{
+	return true;
+}
+bool HardwareTrigger::hasExternalTriggerIn()
+{
+	return true;
+}
+
+bool HardwareTrigger::hasCrossInstrumentTrigger()
+{
+	return true;
+}
+
+void HardwareTrigger::setExternalDirection(uint chnIdx, direction dir)
+{
+	if (chnIdx >= numChannels()) {
+		throw std::invalid_argument("Channel index is out of range");
+	}
+
+	QByteArray byteArray =  lut_digital_out_direction[dir].toLatin1();
+	iio_channel_attr_write(m_logic_channels[chnIdx], "out_direction",
+		byteArray.data());
+}
+
+void HardwareTrigger::setExternalOutSelect(uint chnIdx, out_select out)
+{
+	if (chnIdx >= numChannels()) {
+		throw std::invalid_argument("Channel index is out of range");
+	}
+
+	QByteArray byteArray =  lut_digital_out_select[out].toLatin1();
+	iio_channel_attr_write(m_logic_channels[chnIdx], "out_select",
+		byteArray.data());
 }
 
 void HardwareTrigger::setDigitalCondition(uint chnIdx, condition cond)
