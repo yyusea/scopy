@@ -155,7 +155,7 @@ protected Q_SLOTS:
 
 private:
 	QwtPlotCurve curve;
-	QwtPlotCurve reference;
+	QVector<QwtPlotCurve *> reference;
 	QwtPlotMarker *markerIntersection1;
 	QwtPlotMarker *markerIntersection2;
 	unsigned int numSamples;

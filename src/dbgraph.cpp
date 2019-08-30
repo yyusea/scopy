@@ -104,7 +104,6 @@ void dBgraph::setupReadouts()
 
 dBgraph::dBgraph(QWidget *parent) : QwtPlot(parent),
 	curve("data"),
-	reference("reference"),
 	d_cursorsCentered(false),
 	d_cursorsEnabled(false),
 	xmin(10),
@@ -134,10 +133,10 @@ dBgraph::dBgraph(QWidget *parent) : QwtPlot(parent),
 	curve.setXAxis(QwtPlot::xTop);
 	curve.setYAxis(QwtPlot::yLeft);
 
-	reference.setRenderHint(QwtPlotItem::RenderAntialiased);
-	reference.setXAxis(QwtPlot::xTop);
-	reference.setYAxis(QwtPlot::yLeft);
-	reference.setPen(Qt::red, 1.5);
+//	reference.setRenderHint(QwtPlotItem::RenderAntialiased);
+//	reference.setXAxis(QwtPlot::xTop);
+//	reference.setYAxis(QwtPlot::yLeft);
+//	reference.setPen(Qt::red, 1.5);
 
 	thickness = 1;
 
@@ -234,6 +233,7 @@ dBgraph::~dBgraph()
 	markerIntersection2->detach();
 	canvas()->removeEventFilter(d_cursorReadouts);
 	canvas()->removeEventFilter(d_symbolCtrl);
+	removeReferenceWaveform();
 	delete markerIntersection1;
 	delete markerIntersection2;
 	delete formatter;
@@ -545,14 +545,30 @@ void dBgraph::onFrequencyBarMoved(double frequency)
 
 void dBgraph::addReferenceWaveform(QVector<double> xData, QVector<double> yData)
 {
-	reference.setSamples(xData, yData);
-	reference.attach(this);
+	QList<QColor> d_CurveColors;
+	d_CurveColors << QColor("#ff7200") << QColor("#9013fe") << QColor(Qt::green)
+			      << QColor(Qt::cyan) << QColor(Qt::magenta)
+			      << QColor(Qt::yellow) << QColor(Qt::gray) << QColor(Qt::darkRed)
+			      << QColor(Qt::darkGreen) << QColor(Qt::darkBlue) << QColor(Qt::darkGray)
+			      << QColor(Qt::black);
+
+	reference.push_back(new QwtPlotCurve());
+	reference.back()->setRenderHint(QwtPlotItem::RenderAntialiased);
+	reference.back()->setXAxis(QwtPlot::xTop);
+	reference.back()->setYAxis(QwtPlot::yLeft);
+	reference.back()->setPen(d_CurveColors[(reference.size() - 1) % d_CurveColors.size()], 1.5);
+	reference.back()->setSamples(xData, yData);
+	reference.back()->attach(this);
 	replot();
 }
 
 void dBgraph::removeReferenceWaveform()
 {
-	reference.detach();
+	for (auto ref : reference) {
+		ref->detach();
+		delete ref;
+	}
+	reference.clear();
 	replot();
 }
 
