@@ -115,7 +115,7 @@
         <x>0</x>
         <y>0</y>
         <width>266</width>
-        <height>828</height>
+        <height>881</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -651,6 +651,20 @@ color: rgba(255,255,255,51);
             </item>
             <item>
              <widget class="QSpinBox" name="spin_daisyChain"/>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>DELAY_PER_DEVICE</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="delayPerDevice">
+              <property name="value">
+               <number>5</number>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>

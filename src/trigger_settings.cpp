@@ -125,9 +125,6 @@ TriggerSettings::TriggerSettings(std::shared_ptr<GenericAdc> adc,
 	ui->cmb_analog_extern->setCurrentIndex(0);
 	on_cmb_analog_extern_currentIndexChanged(0);
 
-	ui->label_daisyChain->setVisible(false);
-	ui->spin_daisyChain->setVisible(false);
-
 	if(trigger->hasExternalTriggerIn())
 		ui->cmb_extern_src->addItem("External Trigger In");
 	if(trigger->hasCrossInstrumentTrigger())
@@ -200,7 +197,7 @@ double TriggerSettings::dcLevel() const
 
 void TriggerSettings::setDaisyChainCompensation()
 {
-	const long long DELAY_PER_DEVICE = 23;
+	long long DELAY_PER_DEVICE = ui->delayPerDevice->value();
 	if(ui->extern_en->isChecked() )
 		daisyChainCompensation = ui->spin_daisyChain->value() * DELAY_PER_DEVICE; // if not enabled -> compensation 0
 	else
@@ -638,6 +635,7 @@ void TriggerSettings::on_cmb_extern_src_currentIndexChanged(int idx)
 {
 	trigger->setTriggerIn(idx);
 	ui->cmb_extern_condition->setEnabled(idx==0);
+	ui->spin_daisyChain->setEnabled(idx==0);
 	if (adc_running)
 		write_ui_settings_to_hawrdware();
 }
@@ -658,3 +656,10 @@ void adiscope::TriggerSettings::on_spin_daisyChain_valueChanged(int arg1)
 {
     setTriggerDelay(trigger_raw_delay);
 }
+
+void adiscope::TriggerSettings::on_delayPerDevice_valueChanged(int arg1)
+{
+    setTriggerDelay(trigger_raw_delay);
+}
+
+

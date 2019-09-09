@@ -116,6 +116,7 @@ namespace adiscope {
 
 		void on_cmb_extern_src_currentIndexChanged(int idx);
 		void on_spin_daisyChain_valueChanged(int arg1);
+		void on_delayPerDevice_valueChanged(int arg1);
 
 	private:
 		void setupExternalTriggerDirection();
