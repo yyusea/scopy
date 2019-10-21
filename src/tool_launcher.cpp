@@ -36,6 +36,7 @@
 #include "user_notes.hpp"
 #include "external_script_api.hpp"
 #include "animationmanager.h"
+#include "homephone.h"
 
 #include "ui_device.h"
 #include "ui_tool_launcher.h"
@@ -197,7 +198,6 @@ ToolLauncher::ToolLauncher(QString prevCrashDump, QWidget *parent) :
 
 	connect(ui->stackedWidget, SIGNAL(moved(int)),
 		this, SLOT(pageMoved(int)));
-
 
 	setupHomepage();
 	ui->stackedWidget->setCurrentIndex(0);
@@ -780,6 +780,29 @@ void ToolLauncher::setupHomepage()
 
 	QWidget *homepage = new QWidget(ui->stackedWidget);
 	QVBoxLayout *layout = new QVBoxLayout(homepage);
+	HomePhone* homePhone = new HomePhone();
+
+	homePhone->scopyVersionRequest();
+	homePhone->m2kVersionRequest();
+
+	connect(homePhone, &HomePhone::scopyVersionChanged, this, [=] () {
+		QLabel* label = new QLabel();
+
+		if (homePhone->getScopyVersion().toStdString().compare(std::string("v") + std::string(PROJECT_VERSION)) != 0) {
+			label->setStyleSheet("{ color : red; ");
+			label->setText("There is a new scopy version!");
+		} else if (homePhone->getScopyVersion().toStdString().compare("") == 0) {
+			label->setStyleSheet("{color : white; }");
+			label->setText("Unable to check for latest Scopy version!");
+		} else {
+			label->setStyleSheet("{ color : white;");
+			label->setText("Scopy is up to date!");
+		}
+
+		layout->addWidget(label);
+		label->raise();
+	});
+
 	welcome = new QTextBrowser(homepage);
 	welcome->setFrameShape(QFrame::NoFrame);
 	welcome->setOpenExternalLinks(true);
