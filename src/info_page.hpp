@@ -27,6 +27,7 @@
 #include <QFuture>
 
 #include "iio.h"
+#include "homephone.h"
 
 namespace Ui {
 class InfoPage;
@@ -109,6 +110,7 @@ public:
 			     struct iio_context *ctx = nullptr,
 			     QWidget *parent = 0);
 	~M2kInfoPage();
+	int checkLatestFwVersion(QString currentVersion);
 
 protected:
 	virtual void startIdentification(bool);
