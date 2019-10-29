@@ -95,6 +95,18 @@ public:
 	bool getDigital_decoders_enabled() const;
 	void setDigital_decoders_enabled(bool value);
 
+	bool getAutomatical_version_checking_enabled() const;
+	void setAutomatical_version_checking_enabled(bool value);
+
+	QString getCheck_updates_url() const;
+	void setCheck_update_url(QString link);
+
+	QString getScopyLink() const;
+	void setScopyLink(QString link);
+
+	QString getM2kLink() const;
+	void setM2kLink(QString link);
+
 Q_SIGNALS:
 
 	void notify();
@@ -125,6 +137,10 @@ private:
 	bool osc_filtering_enabled;
 	bool mini_hist_enabled;
 	bool digital_decoders_enabled;
+	bool automatical_version_checking_enabled;
+	QString check_updates_url;
+	QString scopy_link;
+	QString m2k_link;
 	bool m_initialized;
 
 	Preferences_API *pref_api;
@@ -151,6 +167,10 @@ class Preferences_API : public ApiObject
 	Q_PROPERTY(bool osc_filtering_enabled READ getOscFilteringEnabled WRITE setOscFilteringEnabled)
 	Q_PROPERTY(bool mini_hist_enabled READ getMiniHist WRITE setMiniHist)
 	Q_PROPERTY(bool digital_decoders READ getDigitalDecoders WRITE setDigitalDecoders)
+	Q_PROPERTY(bool automatical_version_checking_enabled READ getAutomaticalVersionCheckingEnabled WRITE setAutomaticalVersionCheckingEnabled)
+	Q_PROPERTY(QString check_updates_url READ getCheckVersionsUrl WRITE setCheckVersionsUrl)
+	Q_PROPERTY(QString scopy_link READ getScopyLink WRITE setScopyLink)
+	Q_PROPERTY(QString m2k_link READ getM2kLink WRITE setM2kLink)
 
 public:
 
@@ -202,6 +222,18 @@ public:
 
 	bool getDigitalDecoders() const;
 	void setDigitalDecoders(bool enabled);
+
+	bool getAutomaticalVersionCheckingEnabled() const;
+	void setAutomaticalVersionCheckingEnabled(const bool& enabled);
+
+	QString getCheckUpdatesUrl() const;
+	void setCheckUpdatesUrl(const QString& link);
+
+	QString getScopyLink() const;
+	void setScopyLink(const QString& link);
+
+	QString getM2kLink() const;
+	void setM2kLink(const QString& link);
 
 private:
 	Preferences *preferencePanel;

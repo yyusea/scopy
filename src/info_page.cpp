@@ -209,15 +209,6 @@ void InfoPage::refreshInfoWidget()
 		keyLbl->setText(key);
 		keyLbl->setMinimumWidth(240);
 		keyLbl->setMaximumWidth(240);
-		if (keyLbl->text().compare("Firmware version") == 0) {
-			int checked = dynamic_cast<M2kInfoPage*>(this)->checkLatestFwVersion(m_info_params.value(key));
-			if (checked == 1) {
-				valueLbl->setText(valueLbl->text() + " Firmware is up to date!");
-			} else if (checked == 0){
-				valueLbl->setStyleSheet("QLabel { color : red; }");
-				valueLbl->setText(valueLbl->text() + " There is a new firmware version!");
-			}
-		}
 		ui->paramLayout->addWidget(keyLbl, pos, 0, 1, 1);
 		ui->paramLayout->addWidget(valueLbl, pos, 1, 1, 1);
 		pos++;
@@ -238,6 +229,19 @@ void InfoPage::refreshInfoWidget()
 			ui->paramLayout->addWidget(valueLbl, pos, 1, 1, 1);
 			pos++;
 		}
+	}
+
+	int checked = dynamic_cast<M2kInfoPage*>(this)->checkLatestFwVersion(m_info_params.value("Firmware version"));
+	if (checked == 1) {
+		ui->lblFirmware->setText("Firmware is up to date!");
+	} else if (checked == 0) {
+		QString message = "Your firmware is outdated. "
+						  "Version " + PhoneHome::getM2kVersion() + " was released. "
+						  "<a href=\"";
+		ui->lblFirmware->setText(message + prefPanel->getM2kLink() + "\"> CLICK TO UPDATE </a>");
+		ui->lblFirmware->setTextFormat(Qt::RichText);
+		ui->lblFirmware->setTextInteractionFlags(Qt::TextBrowserInteraction);
+		ui->lblFirmware->setOpenExternalLinks(true);
 	}
 }
 
@@ -449,13 +453,11 @@ void M2kInfoPage::blinkTimeout()
 }
 
 int M2kInfoPage::checkLatestFwVersion(QString currentVersion) {
-	HomePhone* homePhone = new HomePhone();
-
-	if (homePhone->getM2kVersion().compare("") == 0) {
+	if (PhoneHome::getM2kVersion().compare("") == 0) {
 		return -1;
 	}
 
-	if (homePhone->getM2kVersion().compare(currentVersion) == 0) {
+	if (PhoneHome::getM2kVersion().compare(currentVersion) == 0) {
 		return 1;
 	}
 

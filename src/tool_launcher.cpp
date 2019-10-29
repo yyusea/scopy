@@ -36,7 +36,7 @@
 #include "user_notes.hpp"
 #include "external_script_api.hpp"
 #include "animationmanager.h"
-#include "homephone.h"
+#include "phonehome.h"
 
 #include "ui_device.h"
 #include "ui_tool_launcher.h"
@@ -206,6 +206,10 @@ ToolLauncher::ToolLauncher(QString prevCrashDump, QWidget *parent) :
 	ui->stackedWidget->setStyleSheet("background-color:black;");
 	this->installEventFilter(this);
 	ui->btnConnect->hide();
+
+	if (prefPanel->getAutomatical_version_checking_enabled()) {
+		PhoneHome::versionsRequest();
+	}
 
 	_setupToolMenu();
 }
@@ -780,27 +784,27 @@ void ToolLauncher::setupHomepage()
 
 	QWidget *homepage = new QWidget(ui->stackedWidget);
 	QVBoxLayout *layout = new QVBoxLayout(homepage);
-	HomePhone* homePhone = new HomePhone();
 
-	homePhone->scopyVersionRequest();
-	homePhone->m2kVersionRequest();
+	connect(PhoneHome::getInstance(), &PhoneHome::scopyVersionChanged, this, [=] () {
+		QLabel* versionLabel = new QLabel();
 
-	connect(homePhone, &HomePhone::scopyVersionChanged, this, [=] () {
-		QLabel* label = new QLabel();
-
-		if (homePhone->getScopyVersion().toStdString().compare(std::string("v") + std::string(PROJECT_VERSION)) != 0) {
-			label->setStyleSheet("{ color : red; ");
-			label->setText("There is a new scopy version!");
-		} else if (homePhone->getScopyVersion().toStdString().compare("") == 0) {
-			label->setStyleSheet("{color : white; }");
-			label->setText("Unable to check for latest Scopy version!");
+		if (PhoneHome::getScopyVersion().toStdString().compare("") == 0) {
+			versionLabel->setStyleSheet("{color : white; }");
+			versionLabel->setText("Unable to check for latest Scopy version!");
+		} else if (PhoneHome::getScopyVersion().toStdString().compare(std::string("vasdfas") + std::string(PROJECT_VERSION)) != 0) {
+			versionLabel->setText("There is a new scopy version! Version " + PhoneHome::getScopyVersion() + " is out!" +
+						   "<a href = \"" + prefPanel->getScopyLink() +
+						   "\"> CLICK TO UPDATE </a>");
+			versionLabel->setTextFormat(Qt::RichText);
+			versionLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+			versionLabel->setOpenExternalLinks(true);
 		} else {
-			label->setStyleSheet("{ color : white;");
-			label->setText("Scopy is up to date!");
+			versionLabel->setStyleSheet("{ color : white; }");
+			versionLabel->setText("Scopy is up to date! Current version: " + PhoneHome::getScopyVersion());
 		}
 
-		layout->addWidget(label);
-		label->raise();
+		layout->addWidget(versionLabel);
+		versionLabel->raise();
 	});
 
 	welcome = new QTextBrowser(homepage);

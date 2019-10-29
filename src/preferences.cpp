@@ -49,6 +49,8 @@ Preferences::Preferences(QWidget *parent) :
 	osc_filtering_enabled(true),
 	mini_hist_enabled(false),
 	digital_decoders_enabled(true),
+	automatical_version_checking_enabled(true),
+	//versions_link("https://analog-applications-versions.herokuapp.com/all"),
 	m_initialized(false)
 {
 	ui->setupUi(this);
@@ -141,6 +143,10 @@ Preferences::Preferences(QWidget *parent) :
 			m_initialized = true;
 		}
 	});
+	connect(ui->autoUpdatesCheckBox, &QCheckBox::stateChanged, [=](int state) {
+		automatical_version_checking_enabled = (!state ? false : true);
+		Q_EMIT notify();
+	});
 
 	QString preference_ini_file = getPreferenceIniFile();
 	QSettings settings(preference_ini_file, QSettings::IniFormat);
@@ -182,6 +188,7 @@ void Preferences::showEvent(QShowEvent *event)
 	ui->oscFilteringCheckBox->setChecked(osc_filtering_enabled);
 	ui->histCheckBox->setChecked(mini_hist_enabled);
 	ui->decodersCheckBox->setChecked(digital_decoders_enabled);
+	ui->autoUpdatesCheckBox->setChecked(automatical_version_checking_enabled);
 
 	QWidget::showEvent(event);
 }
@@ -191,7 +198,7 @@ QString Preferences::getPreferenceIniFile() const
 	QSettings settings;
 	QFileInfo fileInfo(settings.fileName());
 	QString preference_ini_file = fileInfo.absolutePath() + "/Preferences.ini";
-
+	qDebug() << preference_ini_file;
 	return preference_ini_file;
 }
 
@@ -384,6 +391,46 @@ void Preferences::setOsc_graticule_enabled(bool value)
 	graticule_enabled = value;
 }
 
+bool Preferences::getAutomatical_version_checking_enabled() const
+{
+	return automatical_version_checking_enabled;
+}
+
+void Preferences::setAutomatical_version_checking_enabled(bool value)
+{
+	automatical_version_checking_enabled = value;
+}
+
+QString Preferences::getCheck_updates_url() const
+{
+	return check_updates_url;
+}
+
+void Preferences::setCheck_update_url(QString link)
+{
+	check_updates_url = link;
+}
+
+QString Preferences::getScopyLink() const
+{
+	return scopy_link;
+}
+
+void Preferences::setScopyLink(QString link)
+{
+	scopy_link = link;
+}
+
+QString Preferences::getM2kLink() const
+{
+	return m2k_link;
+}
+
+void Preferences::setM2kLink(QString link)
+{
+	m2k_link = link;
+}
+
 bool Preferences_API::getAnimationsEnabled() const
 {
 	return preferencePanel->animations_enabled;
@@ -530,4 +577,44 @@ bool Preferences_API::getDigitalDecoders() const
 void Preferences_API::setDigitalDecoders(bool enabled)
 {
 	preferencePanel->digital_decoders_enabled = enabled;
+}
+
+bool Preferences_API::getAutomaticalVersionCheckingEnabled() const
+{
+	return preferencePanel->automatical_version_checking_enabled;
+}
+
+void Preferences_API::setAutomaticalVersionCheckingEnabled(const bool &enabled)
+{
+	preferencePanel->automatical_version_checking_enabled = enabled;
+}
+
+QString Preferences_API::getCheckUpdatesUrl() const
+{
+	return preferencePanel->check_updates_url;
+}
+
+void Preferences_API::setCheckUpdatesUrl(const QString &link)
+{
+	preferencePanel->check_updates_url = link;
+}
+
+QString Preferences_API::getScopyLink() const
+{
+	return preferencePanel->scopy_link;
+}
+
+void Preferences_API::setScopyLink(const QString &link)
+{
+	preferencePanel->scopy_link = link;
+}
+
+QString Preferences_API::getM2kLink() const
+{
+	return preferencePanel->m2k_link;
+}
+
+void Preferences_API::setM2kLink(const QString &link)
+{
+	preferencePanel->m2k_link = link;
 }
