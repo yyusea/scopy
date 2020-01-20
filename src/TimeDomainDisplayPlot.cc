@@ -1187,7 +1187,8 @@ bool TimeDomainDisplayPlot::registerSink(std::string sinkUniqueNme, unsigned int
 
 			QwtPlotCurve *curve = new QwtPlotCurve(QString("Data %1").arg(n));
 			curve->setPen(QPen(color));
-			curve->setRenderHint(QwtPlotItem::RenderAntialiased);
+//			curve->setRenderHint(QwtPlotItem::RenderAntialiased);
+			curve->setPaintAttribute(QwtPlotCurve::ClipPolygons, true);
 			d_plot_curve.push_back(curve);
 			curve->setItemAttribute(QwtPlotItem::Legend, true);
 
