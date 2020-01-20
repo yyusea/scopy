@@ -85,6 +85,9 @@ FftDisplayPlot::FftDisplayPlot(int nplots, QWidget *parent) :
 		auto plot = new QwtPlotCurve(QString("CH %1").arg(i + 1));
 
 		plot->setPen(QPen(d_CurveColors[i]));
+		plot->setPaintAttribute(QwtPlotCurve::ClipPolygons, true);
+		plot->setPaintAttribute(QwtPlotCurve::FilterPointsAggressive, true);
+		plot->setRenderHint(QwtPlotItem::RenderAntialiased, false);
 		plot->attach(this);
 
 		d_plot_curve.push_back(plot);
