@@ -131,6 +131,10 @@ if (NOT QWTPOLAR_LIBRARIES OR NOT QWTPOLAR_INCLUDE_DIRS)
 	message(SEND_ERROR "QwtPolar not found")
 endif()
 
+# Find libm2k
+find_library(LIBM2K_LIBRARIES NAMES m2k libm2k REQUIRED)
+find_path(LIBM2K_INCLUDE_DIRS libm2k/m2k.hpp)
+
 find_package(PkgConfig)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GLIBMM REQUIRED glibmm-2.4)
@@ -163,6 +167,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/src
 	${BREAKPAD_INCLUDE_DIRS}
 	${BREAKPAD_INCLUDE_DIRS}/breakpad
+	${LIBM2K_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -293,6 +298,7 @@ target_link_libraries(${PROJECT_NAME} LINK_PRIVATE
 		${GLIBMM_LIBRARIES}
 		${SIGCPP_LIBRARIES}
 		${GLIB_LIBRARIES}
+		${LIBM2K_LIBRARIES}
 )
 
 if (NOT WIN32)
