@@ -101,6 +101,7 @@ enum {
 	NumberPatternId,
 	RandomPatternId,
 	BinaryCounterId,
+	PulsePatternId,
 	UARTPatternId,
 	SPIPatternId,
 	I2CPatternId,
@@ -711,50 +712,63 @@ public:
 	void build_ui(QWidget *parent = 0);
 	void destroy_ui();
 };
-
-class PulsePattern : virtual public Pattern
+#endif
+class PulsePattern : public Pattern
 {
+	Q_OBJECT
 protected:
 	bool start;
 	uint32_t low_number_of_samples;
 	uint32_t high_number_of_samples;
 	uint32_t counter_init;
-	uint16_t divider;
-	uint16_t divider_init;
+	uint32_t delay;
+	uint32_t no_pulses;
+	double sample_rate;
 
 public:
-	PulsePattern();
-	uint8_t generate_pattern();
+	PulsePattern(QObject *parent = 0);
+	~PulsePattern();
+	uint8_t generate_pattern(uint32_t sample_rate,
+							 uint32_t number_of_samples, uint16_t number_of_channels);
 	uint32_t get_min_sampling_freq();
-	uint32_t get_required_nr_of_samples();
+	uint32_t get_required_nr_of_samples(uint32_t  sample_rate,
+										uint32_t number_of_channels);
 	bool get_start();
 	uint32_t get_low_number_of_samples();
 	uint32_t get_high_number_of_samples();
 	uint32_t get_counter_init();
-	uint16_t get_divider();
-	uint16_t get_divider_init();
+	uint32_t get_delay();
+	uint32_t get_no_pulses();
 	void set_start(bool val);
 	void set_low_number_of_samples(uint32_t val);
 	void set_high_number_of_samples(uint32_t val);
 	void set_counter_init(uint32_t val);
-	void set_divider(uint16_t val);
-	void set_divider_init(uint16_t val);
+	void set_delay(uint32_t val);
+	void set_no_pulses(uint32_t val);
 
+	double get_sample_rate() const;
+	void set_sample_rate(double value);
 };
 
-class PulsePatternUI : public PatternUI, public PulsePattern
+class PulsePatternUI : public PatternUI
 {
 	Q_OBJECT
 	Ui::PulsePatternUI *ui;
 	QWidget *parent_;
+	PulsePattern *pattern;
+	ScaleSpinButton* frequencySpinButton;
+
 public:
-	PulsePatternUI(QWidget *parent = 0);
+	PulsePatternUI(PulsePattern *pattern, QWidget *parent = 0);
 	~PulsePatternUI();
-	void parse_ui();
-	void build_ui(QWidget *parent = 0);
+	Pattern *get_pattern();
+	void build_ui(QWidget *parent = 0,uint16_t number_of_channels = 0);
 	void destroy_ui();
+public Q_SLOTS:
+	void parse_ui();
 };
 
+#if 0
 class JohnsonCounterPattern : virtual public Pattern
 {
 	uint32_t frequency;
