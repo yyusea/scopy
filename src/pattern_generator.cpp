@@ -574,7 +574,7 @@ void PatternGenerator::updateCGSettings()
 		}
 	}
 
-	auto pattern = QString::fromStdString(chg->pattern->get_name());
+	auto pattern = chg->pattern->get_name();
 
 	cgSettings->LTitle->setText(title);
 	cgSettings->CBPattern->setCurrentText(pattern);
@@ -616,7 +616,7 @@ void PatternGenerator::patternChanged(int index)
 	auto chg = chm.getHighlightedChannelGroup();
 	chg->pattern->deinit();
 	delete chg->pattern;
-	chg->pattern = PatternFactory::create(index);
+	chg->pattern = PatternFactory::create(index, this);
 
 	deleteSettingsWidget();
 	createSettingsWidget();
@@ -636,9 +636,8 @@ void PatternGenerator::deleteSettingsWidget()
 void PatternGenerator::createSettingsWidget()
 {
 	auto chg = chm.getHighlightedChannelGroup();
-	cgSettings->LPattern->setText(QString::fromStdString(
-	                                      chg->pattern->get_name()).toUpper());
-	currentUI = PatternFactory::create_ui(chg->pattern);
+	cgSettings->LPattern->setText(chg->pattern->get_name().toUpper());
+	currentUI = PatternFactory::create_ui(chg->pattern, this);
 	currentUI->build_ui(cgSettings->patternSettings,chg->get_channel_count());
 	currentUI->get_pattern()->init();
 	currentUI->post_load_ui();

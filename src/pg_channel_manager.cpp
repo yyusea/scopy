@@ -1428,7 +1428,7 @@ void PatternGeneratorChannelManager::commitBuffer(PatternGeneratorChannelGroup
 {
 	uint8_t channel_mapping[16];
 	memset(channel_mapping,0x00,16*sizeof(uint8_t));
-	short *bufferPtr = chg->pattern->get_buffer();
+	uint16_t *bufferPtr = chg->pattern->get_buffer();
 	int i=0;
 	auto buffer_channel_mask = (1<<chg->get_channel_count())-1;
 

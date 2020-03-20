@@ -48,7 +48,8 @@ void JSConsole::log(QString msg)
 	qDebug() << "jsConsole: "<< msg;
 }
 
-Pattern::Pattern()
+Pattern::Pattern(QObject *parent) :
+	QObject(parent)
 {
 	// qDebug()<<"PatternCreated";
 	buffer = nullptr;
@@ -61,22 +62,22 @@ Pattern::~Pattern()
 	delete_buffer();
 }
 
-string Pattern::get_name()
+QString Pattern::get_name()
 {
 	return name;
 }
 
-void Pattern::set_name(const string &name_)
+void Pattern::set_name(const QString &name_)
 {
 	name = name_;
 }
 
-string Pattern::get_description()
+QString Pattern::get_description()
 {
 	return description;
 }
 
-void Pattern::set_description(const string &description_)
+void Pattern::set_description(const QString &description_)
 {
 	description = description_;
 }
@@ -91,6 +92,11 @@ void Pattern::deinit()
 
 }
 
+QStringList Pattern::get_channel_names()
+{
+	return channel_names;
+}
+
 bool Pattern::is_periodic()
 {
 	return periodic;
@@ -101,7 +107,7 @@ void Pattern::set_periodic(bool periodic_)
 	periodic=periodic_;
 }
 
-short *Pattern::get_buffer()
+uint16_t *Pattern::get_buffer()
 {
 	return buffer;
 }
@@ -120,12 +126,12 @@ uint8_t Pattern::pre_generate()
 	return 0;
 }
 
-std::string Pattern::toString()
+QString Pattern::toString()
 {
 	return "";
 }
 
-bool Pattern::fromString(std::string from)
+bool Pattern::fromString(QString from)
 {
 	return 0;
 }
@@ -196,38 +202,39 @@ QJsonValue Pattern_API::toJson(Pattern *p)
 	SPIPattern *sp = dynamic_cast<SPIPattern *>(p);
 	I2CPattern *ip = dynamic_cast<I2CPattern *>(p);
 	ImportPattern *imp = dynamic_cast<ImportPattern *>(p);
+	PulsePattern *pp = dynamic_cast<PulsePattern *>(p);
 
 	QJsonObject params;
 
 	if (cp) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["freq"]  = QJsonValue(cp->get_frequency());
 		params["duty"]  = QJsonValue(cp->get_duty_cycle());
 		params["phase"] = QJsonValue(cp->get_phase());
 		obj["params"] = QJsonValue(params);
 	} else if (np) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["nr"]  = QJsonValue((qint64)np->get_nr());
 		obj["params"] = QJsonValue(params);
 	} else if (rp) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["freq"]  = QJsonValue((qint64)rp->get_frequency());
 		obj["params"] = QJsonValue(params);
 	} else if (bcp) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["freq"]  = QJsonValue((qint64)bcp->get_frequency());
 		obj["params"] = QJsonValue(params);
 	} else if (gcp) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["freq"]  = QJsonValue((qint64)gcp->get_frequency());
 		obj["params"] = QJsonValue(params);
 	} else if (up) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["uart"] = QString::fromStdString(up->get_params());
 		params["string"] = QString::fromStdString(up->get_string());
 		obj["params"] = QJsonValue(params);
 	} else if (sp) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["BPF"]=sp->getBytesPerFrame();
 		params["IFS"]=sp->getWaitClocks();
 		params["freq"]= QJsonValue((qint64)sp->getClkFrequency());
@@ -246,7 +253,7 @@ QJsonValue Pattern_API::toJson(Pattern *p)
 
 		obj["params"] = QJsonValue(params);
 	} else if (ip) {
-		obj["name"] = QString::fromStdString(p->get_name());
+		obj["name"] = p->get_name();
 		params["BPF"]=ip->getBytesPerFrame();
 		params["IFS"]=ip->getInterFrameSpace();
 		params["freq"]= QJsonValue((qint64)ip->getClkFrequency());
@@ -264,7 +271,7 @@ QJsonValue Pattern_API::toJson(Pattern *p)
 
 		obj["params"] = QJsonValue(params);
 	} else if (imp) {
-		obj["name"] = QString::fromStdString(imp->get_name());
+		obj["name"] = imp->get_name();
 		params["frequency"] =  QJsonValue((qint64)imp->get_frequency());
 		params["file"] = imp->fileName;
 		params["channel_mapping"] = QJsonValue((imp->channel_mapping));
@@ -420,7 +427,7 @@ void ClockPattern::set_phase(int value)
 
 }
 
-ClockPattern::ClockPattern()
+ClockPattern::ClockPattern(QObject *parent) : Pattern(parent)
 {
 	set_name("Clock");
 	set_description("Clock pattern");
@@ -458,7 +465,7 @@ uint8_t ClockPattern::generate_pattern(uint32_t sample_rate,
 	}
 
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 	int i=0;
 
 	// phased samples
@@ -479,7 +486,7 @@ uint8_t ClockPattern::generate_pattern(uint32_t sample_rate,
 }
 
 ClockPatternUI::ClockPatternUI(ClockPattern *pattern,
-			       QWidget *parent) : PatternUI(parent), pattern(pattern), parent_(parent)
+				   QWidget *parent) : PatternUI(parent), pattern(pattern), parent_(parent)
 {
 	ui = new Ui::EmptyPatternUI();
 	ui->setupUi(this);
@@ -671,7 +678,7 @@ void NumberPattern::set_nr(const uint16_t& value)
 	nr = value;
 }
 
-NumberPattern::NumberPattern() : nr(0)
+NumberPattern::NumberPattern(QObject *parent) : Pattern(parent), nr(0)
 {
 	set_name(NumberPatternName);
 	set_description(NumberPatternDescription);
@@ -681,7 +688,7 @@ uint8_t NumberPattern::generate_pattern(uint32_t sample_rate,
 					uint32_t number_of_samples, uint16_t number_of_channels)
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 
 	for (auto i=0; i<number_of_samples; i++) {
 		buffer[i] = nr;
@@ -749,7 +756,7 @@ void NumberPatternUI::parse_ui()
 	Q_EMIT patternParamsChanged();
 }
 
-RandomPattern::RandomPattern()
+RandomPattern::RandomPattern(QObject *parent) : Pattern(parent)
 {
 	set_name(RandomPatternName);
 	set_description(RandomPatternDescription);
@@ -789,7 +796,7 @@ uint8_t RandomPattern::generate_pattern(uint32_t sample_rate,
 					uint32_t number_of_samples, uint16_t number_of_channels)
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 	auto samples_per_count = (int)round(((float)sample_rate/(float)frequency));
 	int j=0;
 
@@ -921,7 +928,7 @@ void BinaryCounterPattern::set_init_value(const uint16_t& value)
 	init_value = value;
 }
 
-BinaryCounterPattern::BinaryCounterPattern()
+BinaryCounterPattern::BinaryCounterPattern(QObject *parent) : Pattern(parent)
 {
 	set_name(BinaryCounterPatternName);
 	set_description(BinaryCounterPatternDescription);
@@ -943,7 +950,7 @@ uint8_t BinaryCounterPattern::generate_pattern(uint32_t sample_rate,
 		uint32_t number_of_samples, uint16_t number_of_channels)
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 	auto samples_per_count = (int)round(((float)sample_rate/(float)frequency));
 	//auto i=init_value;
 	auto i = 0;
@@ -1033,7 +1040,7 @@ void BinaryCounterPatternUI::parse_ui()
 	Q_EMIT patternParamsChanged();
 }
 
-GrayCounterPattern::GrayCounterPattern()
+GrayCounterPattern::GrayCounterPattern(QObject *parent) : Pattern(parent)
 {
 	set_name(GrayCounterPatternName);
 	set_description(GrayCounterPatternDescription);
@@ -1044,7 +1051,7 @@ uint8_t GrayCounterPattern::generate_pattern(uint32_t sample_rate,
 		uint32_t number_of_samples, uint16_t number_of_channels)
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 	auto samples_per_count = (int)round(((float)sample_rate/(float)frequency));
 	init_value = 0;
 	end_value =(1<< (number_of_channels))-1;
@@ -1132,7 +1139,7 @@ void GrayCounterPatternUI::parse_ui()
 }
 
 
-UARTPattern::UARTPattern()
+UARTPattern::UARTPattern(QObject *parent) : Pattern(parent)
 {
 	parity = SP_PARITY_NONE;
 	stop_bits = 1;
@@ -1364,10 +1371,10 @@ uint8_t UARTPattern::generate_pattern(uint32_t sample_rate,
 	encapsulateUartFrame(*(str.c_str()), &bits_per_frame);
 	uint32_t samples_per_frame = samples_per_bit * bits_per_frame;
 
-	buffer = new short[number_of_samples]; // no need to recreate buffer
-	memset(buffer, 0xff, (number_of_samples)*sizeof(short));
+	buffer = new uint16_t[number_of_samples]; // no need to recreate buffer
+	memset(buffer, 0xff, (number_of_samples)*sizeof(uint16_t));
 
-	short *buf_ptr = buffer;
+	uint16_t *buf_ptr = buffer;
 	const char *str_ptr = str.c_str();
 	int i;
 
@@ -1380,7 +1387,7 @@ uint8_t UARTPattern::generate_pattern(uint32_t sample_rate,
 		auto frame_to_send = encapsulateUartFrame(*str_ptr, &bits_per_frame);
 
 		for (auto j=0; j<bits_per_frame; j++) {
-			short bit_to_send;
+			uint16_t bit_to_send;
 
 			if (!msb_first) {
 				bit_to_send = (frame_to_send & 0x01);
@@ -1402,7 +1409,7 @@ uint8_t UARTPattern::generate_pattern(uint32_t sample_rate,
 		buf_ptr++;
 	}
 
-	for (; buf_ptr!=(short *)(buffer+number_of_samples); buf_ptr++) {
+	for (; buf_ptr!=(uint16_t *)(buffer+number_of_samples); buf_ptr++) {
 		*buf_ptr = 1;
 	}
 
@@ -1545,7 +1552,7 @@ void I2CPattern::setTenbit(bool value)
 	tenbit = value;
 }
 
-I2CPattern::I2CPattern()
+I2CPattern::I2CPattern(QObject *parent) : Pattern(parent)
 {
 	clkFrequency=5000;
 	msbFirst=true;
@@ -1667,9 +1674,9 @@ uint8_t I2CPattern::generate_pattern(uint32_t sample_rate,
 {
 	delete_buffer();
 
-	buffer = new short[number_of_samples]; // no need to recreate buffer
+	buffer = new uint16_t[number_of_samples]; // no need to recreate buffer
 	buf_ptr = buffer;
-	memset(buffer, (0xff), (number_of_samples)*sizeof(short));
+	memset(buffer, (0xff), (number_of_samples)*sizeof(uint16_t));
 
 	samples_per_bit = 2*(sample_rate/clkFrequency);
 	buf_ptr+=interFrameSpace*samples_per_bit;
@@ -1824,7 +1831,7 @@ void SPIPattern::setMsbFirst(bool value)
 	msbFirst = value;
 }
 
-SPIPattern::SPIPattern()
+SPIPattern::SPIPattern(QObject *parent) : Pattern(parent)
 {
 	CPOL=false;
 	CPHA = false;
@@ -1883,19 +1890,19 @@ uint8_t SPIPattern::generate_pattern(uint32_t sample_rate,
 {
 	delete_buffer();
 
-	buffer = new short[number_of_samples]; // no need to recreate buffer
+	buffer = new uint16_t[number_of_samples]; // no need to recreate buffer
 
 	auto clkActiveBit = 0;
 	auto outputBit = 1;
 	auto csBit = 2;
 
 	if (CSPOL) {
-		memset(buffer, (CPOL) ? 0xfffb : 0xfffa, (number_of_samples)*sizeof(short));
+		memset(buffer, (CPOL) ? 0xfffb : 0xfffa, (number_of_samples)*sizeof(uint16_t));
 	} else {
-		memset(buffer, (CPOL) ? 0xffff : 0xfffe, (number_of_samples)*sizeof(short));
+		memset(buffer, (CPOL) ? 0xffff : 0xfffe, (number_of_samples)*sizeof(uint16_t));
 	}
 
-	short *buf_ptr = buffer;
+	uint16_t *buf_ptr = buffer;
 
 	auto samples_per_bit = 2 * (sample_rate/clkFrequency);
 	buf_ptr += waitClocks * samples_per_bit;
@@ -2160,10 +2167,10 @@ void SPIPatternUI::parse_ui()
 }
 
 
-JSPattern::JSPattern(QJsonObject obj_) : obj(obj_)
+JSPattern::JSPattern(QJsonObject obj_, QObject *parent) : obj(obj_), Pattern(parent)
 {
 	qDebug()<<"JSPattern created";
-	set_name(obj["name"].toString().toStdString());
+	set_name(obj["name"].toString());
 	console = new JSConsole();
 	qEngine = nullptr;
 	sample_rate = 1;
@@ -2324,7 +2331,7 @@ void JSPattern::commitBuffer(QJSValue jsBufferValue, QJSValue jsBufferSize)
 	}
 
 	delete_buffer();
-	buffer = new short[jsBufferSize.toInt()];
+	buffer = new uint16_t[jsBufferSize.toInt()];
 
 	for (auto i=0; i<jsBufferSize.toInt(); i++) {
 		if (!jsBufferValue.property(i).isError()) {
@@ -2561,7 +2568,7 @@ uint8_t LFSRPattern::generate_pattern()
 	uint16_t lfsr = start_state;
 	int i=0;
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 
 	do {
 		unsigned lsb = lfsr & 1;   /* Get LSB (i.e., the output bit). */
@@ -2660,7 +2667,7 @@ ConstantPattern::ConstantPattern()
 uint8_t ConstantPattern::generate_pattern()
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 
 	for (auto i=0; i<number_of_samples; i++) {
 		if (constant) {
@@ -2911,7 +2918,7 @@ void JohnsonCounterPattern::set_frequency(const uint32_t& value)
 uint8_t JohnsonCounterPattern::generate_pattern()
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 	auto samples_per_count = ((float)sample_rate/(float)frequency);
 	auto i=0;
 	auto j=0;
@@ -3026,7 +3033,7 @@ uint32_t WalkingPattern::get_required_nr_of_samples()
 uint8_t WalkingPattern::generate_pattern()
 {
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 	auto samples_per_count = ((float)sample_rate/(float)frequency);
 	uint16_t i;
 	i = (1<<length) - 1;
@@ -3163,7 +3170,7 @@ void ImportPattern::setNativeDialog(bool nativeDialog)
 	this->nativeDialog = nativeDialog;
 }
 
-ImportPattern::ImportPattern():
+ImportPattern::ImportPattern(QObject *parent) : Pattern(parent),
 	fileName(""),
 	channel_mapping(0),
 	nativeDialog(true)
@@ -3191,7 +3198,7 @@ uint8_t ImportPattern::generate_pattern(uint32_t sample_rate,
 	}
 
 	delete_buffer();
-	buffer = new short[number_of_samples];
+	buffer = new uint16_t[number_of_samples];
 
 
 	for (int i = 0; i < data.size(); ++i) {
@@ -3313,7 +3320,7 @@ void ImportPatternUI::build_ui(QWidget *parent,uint16_t number_of_channels)
 		import_settings->setDisabled(false);
 		importBtn->setDisabled(false);
 
-		unsigned short mask = pattern->channel_mapping;
+		uint16_t mask = pattern->channel_mapping;
 
 		QMap<int, bool> config;
 		for (int i = 0; i < data[0].size(); ++i) {
@@ -3385,7 +3392,7 @@ void ImportPatternUI::parse_ui()
 		div=(long)floor((double)PGMaxSampleRate/freq);
 	}
 
-	unsigned short mask = 0;
+	uint16_t mask = 0;
 	for (int key : import_settings->getExportConfig().keys()) {
 		mask = mask | (import_settings->getExportConfig()[key] << key);
 	}
@@ -3394,7 +3401,7 @@ void ImportPatternUI::parse_ui()
 	pattern->data.clear();
 	for (int i = 0; i < data.size(); ++i) {
 		int k = 0;
-		unsigned short line_mask = 0;
+		uint16_t line_mask = 0;
 		for (int j = 0 ; j < data[i].size(); ++j) {
 			if (mask & (1 << j) ) {
 				line_mask |= ((int)data[i][j] << k);
@@ -3418,13 +3425,10 @@ void ImportPatternUI::parse_ui()
 
 }
 
-
-
 int PatternFactory::static_ui_limit = 0;
 QStringList PatternFactory::ui_list = {};
 QStringList PatternFactory::description_list = {};
 QJsonObject PatternFactory::patterns = {};
-
 
 void PatternFactory::init()
 {
@@ -3440,6 +3444,8 @@ void PatternFactory::init()
 	description_list.append(RandomPatternDescription);
 	ui_list.append(BinaryCounterPatternName);
 	description_list.append(BinaryCounterPatternDescription);
+	ui_list.append(PulsePatternName);
+	description_list.append(PulsePatternDescription);
 	ui_list.append(UARTPatternName);
 	description_list.append(UARTPatternDescription);
 	ui_list.append(SPIPatternName);
@@ -3501,7 +3507,7 @@ void PatternFactory::init()
 }
 
 
-Pattern *PatternFactory::create(QString name)
+Pattern *PatternFactory::create(QString name, QObject *parent)
 {
 	int i=0;
 
@@ -3516,40 +3522,40 @@ Pattern *PatternFactory::create(QString name)
 	return create(0);
 }
 
-Pattern *PatternFactory::create(int index)
+Pattern *PatternFactory::create(int index, QObject *parent)
 {
 	switch (index) {
 	case ClockPatternId:
-		return new ClockPattern();
+		return new ClockPattern(parent);
 
 	case RandomPatternId:
-		return new RandomPattern();
+		return new RandomPattern(parent);
 
 	case BinaryCounterId:
-		return new BinaryCounterPattern();
+		return new BinaryCounterPattern(parent);
 
 	case UARTPatternId:
-		return new UARTPattern();
+		return new UARTPattern(parent);
 
 	case NumberPatternId:
-		return new NumberPattern();
+		return new NumberPattern(parent);
 
 	case GrayCounterId:
-		return new GrayCounterPattern();
+		return new GrayCounterPattern(parent);
 
 	case SPIPatternId:
-		return new SPIPattern();
+		return new SPIPattern(parent);
 
 	case I2CPatternId:
-		return new I2CPattern();
+		return new I2CPattern(parent);
 
 	case ImportPatternId:
-		return new ImportPattern();
+		return new ImportPattern(parent);
 
 	default:
 		if (index>=static_ui_limit) {
 			return new JSPattern(patterns[QString::number(index
-						      -static_ui_limit)].toObject());
+							  -static_ui_limit)].toObject());
 		} else {
 			return nullptr;
 		}
@@ -3579,7 +3585,7 @@ Pattern *PatternFactory::create(int index)
 PatternUI *PatternFactory::create_ui(Pattern *pattern, QWidget *parent)
 {
 	int i=0;
-	QString name = QString::fromStdString(pattern->get_name());
+	QString name = pattern->get_name();
 
 	for (auto str : ui_list) {
 		if (name==str) {

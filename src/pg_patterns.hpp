@@ -120,24 +120,26 @@ public:
 	Q_INVOKABLE void log(QString msg);
 };
 
-class Pattern
+class Pattern : public QObject
 {
+	Q_OBJECT
 private:
-	std::string name;
-	std::string description;
+	QString name;
+	QString description;
+	QStringList channel_names;
 	bool periodic;
 protected: // temp
-	short *buffer;
+	uint16_t *buffer;
 public:
 
-	Pattern(/*string name_, string description_*/);
+	Pattern(QObject *parent = 0);
 	virtual ~Pattern();
-	std::string get_name();
-	void set_name(const std::string &name_);
-	std::string get_description();
-	void set_description(const std::string &description_);
+	QString get_name();
+	void set_name(const QString &name_);
+	QString get_description();
+	void set_description(const QString &description_);
 	void set_periodic(bool periodic_);
-	short *get_buffer();
+	uint16_t *get_buffer();
 	void delete_buffer();
 	virtual void init();
 	virtual uint8_t pre_generate();
@@ -148,9 +150,11 @@ public:
 	virtual uint8_t generate_pattern(uint32_t sample_rate,
 	                                 uint32_t number_of_samples, uint16_t number_of_channels) = 0;
 	virtual void deinit();
+	virtual QStringList get_channel_names();
 
-	virtual std::string toString();
-	virtual bool fromString(std::string from);
+
+	virtual QString toString();
+	virtual bool fromString(QString from);
 
 };
 
@@ -196,7 +200,7 @@ class ClockPattern : virtual public Pattern
 	float duty_cycle;
 	int phase;
 public:
-	ClockPattern();
+	ClockPattern(QObject *parent = 0);
 	virtual ~ClockPattern();
 	uint8_t generate_pattern(uint32_t sample_rate, uint32_t number_of_samples,
 	                         uint16_t number_of_channels);
@@ -238,7 +242,7 @@ class RandomPattern : virtual public Pattern
 protected:
 	uint32_t frequency;
 public:
-	RandomPattern();
+	RandomPattern(QObject *parent = 0);
 	virtual ~RandomPattern();
 	uint32_t get_min_sampling_freq();
 	uint32_t get_required_nr_of_samples(uint32_t sample_rate,
@@ -279,7 +283,7 @@ protected:
 	uint16_t increment;
 	uint16_t init_value;
 public:
-	BinaryCounterPattern();
+	BinaryCounterPattern(QObject *parent = 0);
 	virtual ~BinaryCounterPattern();
 	virtual uint8_t generate_pattern(uint32_t sample_rate,
 	                                 uint32_t number_of_samples, uint16_t number_of_channels);
@@ -321,7 +325,7 @@ private Q_SLOTS:
 class GrayCounterPattern : virtual public BinaryCounterPattern
 {
 public:
-	GrayCounterPattern();
+	GrayCounterPattern(QObject *parent = 0);
 	virtual ~GrayCounterPattern() {}
 	uint8_t generate_pattern(uint32_t sample_rate,
 	                         uint32_t number_of_samples, uint16_t number_of_channels);
@@ -365,7 +369,7 @@ public:
 		/** Space parity. */
 		SP_PARITY_SPACE = 4
 	};
-	UARTPattern();
+	UARTPattern(QObject *parent = 0);
 	virtual ~UARTPattern() {}
 
 	virtual uint8_t generate_pattern(uint32_t sample_rate,
@@ -425,7 +429,7 @@ class I2CPattern: virtual public Pattern
 	uint8_t interFrameSpace;
 	uint8_t bytesPerFrame;
 
-	short *buf_ptr;
+	uint16_t *buf_ptr;
 
 	const int SDA = 1;
 	const int SCL = 0;
@@ -438,7 +442,7 @@ class I2CPattern: virtual public Pattern
 	void sample_stop();
 public:
 	std::deque<uint8_t> v;
-	I2CPattern();
+	I2CPattern(QObject *parent = 0);
 	virtual ~I2CPattern() {}
 	virtual uint8_t generate_pattern(uint32_t sample_rate,
 	                                 uint32_t number_of_samples, uint16_t number_of_channels);
@@ -492,7 +496,7 @@ private:
 
 public:
 	std::deque<uint8_t> v;
-	SPIPattern();
+	SPIPattern(QObject *parent = 0);
 	virtual ~SPIPattern() {}
 	virtual uint8_t generate_pattern(uint32_t sample_rate,
 	                                 uint32_t number_of_samples, uint16_t number_of_channels);
@@ -540,7 +544,7 @@ class NumberPattern : virtual public Pattern
 private:
 	uint16_t nr;
 public:
-	NumberPattern();
+	NumberPattern(QObject *parent = 0);
 	virtual ~NumberPattern() {}
 	virtual uint8_t generate_pattern(uint32_t sample_rate,
 	                                 uint32_t number_of_samples, uint16_t number_of_channels);
@@ -568,7 +572,7 @@ private Q_SLOTS:
 
 
 
-class JSPattern : public QObject, virtual public Pattern
+class JSPattern : public Pattern
 {
 	Q_OBJECT
 private:
@@ -580,7 +584,7 @@ public:
 	QWidget *ui_form;
 
 	QJsonObject obj;
-	JSPattern(QJsonObject obj_);
+	JSPattern(QJsonObject obj_, QObject *parent = 0);
 	quint32 number_of_samples;
 	quint32 number_of_channels;
 	quint32 sample_rate;
@@ -817,7 +821,7 @@ class ImportPattern : virtual public Pattern
 	float frequency;
 	bool nativeDialog;
 public:
-	ImportPattern();
+	ImportPattern(QObject *parent = 0);
 	virtual ~ImportPattern();
 	uint8_t generate_pattern(uint32_t sample_rate, uint32_t number_of_samples,
 				 uint16_t number_of_channels);
@@ -826,8 +830,8 @@ public:
 	uint32_t get_min_sampling_freq();
 	uint32_t get_required_nr_of_samples(uint32_t  sample_rate,
 					    uint32_t number_of_channels);
-	unsigned short channel_mapping;
-	QVector<unsigned short> data;
+	uint16_t channel_mapping;
+	QVector<unsigned uint16_t> data;
 	QString fileName;
 
 	float getFrequency() const;
@@ -874,8 +878,8 @@ class PatternFactory
 	static QJsonObject patterns;
 public:
 	static void init();
-	static Pattern *create(QString name);
-	static Pattern *create(int index);
+	static Pattern *create(QString name, QObject *parent = 0);
+	static Pattern *create(int index, QObject *parent = 0);
 	static PatternUI *create_ui(Pattern *pattern, int index, QWidget *parent = 0);
 	static PatternUI *create_ui(Pattern *pattern, QWidget *parent=0);
 	static QStringList get_ui_list();
