@@ -31,6 +31,7 @@
 #include "config.h"
 #include "tool_launcher.hpp"
 #include "scopyApplication.hpp"
+#include <stdio.h>
 
 using namespace adiscope;
 
@@ -127,6 +128,12 @@ int main(int argc, char **argv)
 	myappTranslator.load(languageFileName);
 	app.installTranslator(&myappTranslator);
 
+	QDir directory(":/translations");
+	QStringList languages = directory.entryList(QStringList() << "*.qm" << "*.QM", QDir::Files);
+	for (const auto & file : languages) {
+		// file is of type QString
+		printf("Found language: %s\n",file.toStdString().c_str());
+	}
 
 	ToolLauncher launcher(prevCrashDump);
 
