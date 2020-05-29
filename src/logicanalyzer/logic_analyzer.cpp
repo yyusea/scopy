@@ -175,6 +175,8 @@ LogicAnalyzer::LogicAnalyzer(M2kDigital *m2kDigital, adiscope::Filter *filt,
 
 	readPreferences();
 
+	ui->btnGeneralSettings->setChecked(true);
+
 	api->setObjectName(QString::fromStdString(Filter::tool_name(
 							  TOOL_LOGIC_ANALYZER)));
 	api->load(*settings);

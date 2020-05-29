@@ -106,6 +106,13 @@ PatternGenerator::PatternGenerator(M2kDigital *m2kDigital, Filter *filt,
 	setupPatterns();
 
 	checkEnabledChannels();
+
+	// TODO:
+	// readPreferences()
+
+	m_ui->btnGeneralSettings->setChecked(true);
+
+	// API load
 }
 
 PatternGenerator::~PatternGenerator()
@@ -197,6 +204,7 @@ void PatternGenerator::setupUi()
 	m_ui->traceHeightLineEdit->setDisabled(true);
 	m_ui->traceHeightLineEdit->setText(QString::number(1));
 	m_ui->patternComboBox->setDisabled(true);
+	m_ui->btnOutputMode->setDisabled(true);
 
 	m_ui->traceHeightLineEdit->setValidator(new QIntValidator(1, 100, m_ui->traceHeightLineEdit));
 
@@ -270,6 +278,7 @@ void PatternGenerator::channelSelectedChanged(int chIdx, bool selected)
 		m_ui->traceHeightLineEdit->setText(
 					QString::number(m_plotCurves[m_selectedChannel]->getTraceHeight()));
 		m_ui->patternComboBox->setEnabled(true);
+		m_ui->btnOutputMode->setEnabled(true);
 
 		updateChannelGroupWidget(true);
 		updateChannelGroupPattern(true);
@@ -282,6 +291,7 @@ void PatternGenerator::channelSelectedChanged(int chIdx, bool selected)
 		m_ui->traceHeightLineEdit->setDisabled(true);
 		m_ui->traceHeightLineEdit->setText("");
 		m_ui->patternComboBox->setDisabled(true);
+		m_ui->btnOutputMode->setDisabled(true);
 
 		updateChannelGroupWidget(false);
 		updateChannelGroupPattern(false);
@@ -469,6 +479,10 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 void PatternGenerator::on_btnOutputMode_toggled(bool checked)
 {
+	if (m_selectedChannel >= DIGITAL_NR_CHANNELS) {
+		return;
+	}
+
 	m_outputMode ^= (-checked ^ m_outputMode) & (1 << m_selectedChannel);
 	m_diom->setOutputMode(m_selectedChannel, checked);
 }
@@ -932,6 +946,12 @@ void PatternGenerator::setupPatterns()
 void PatternGenerator::updateChannelGroupPattern(bool visible)
 {
 	QString pattern = "-";
+
+	qDebug() << "################################################################";
+	qDebug() << "Update ch group pattern for: " << m_selectedChannel;
+	qDebug() << "Should be visible: " << visible;
+	qDebug() << "Enabled patterns: " << m_enabledPatterns;
+	qDebug() << "################################################################";
 
 	for (const auto &ep : m_enabledPatterns) {
 		if (ep.first.contains(m_selectedChannel)) {
