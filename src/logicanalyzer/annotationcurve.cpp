@@ -25,7 +25,7 @@ using namespace adiscope;
 using namespace adiscope::logic;
 
 AnnotationCurve::AnnotationCurve(logic::LogicTool *logic, std::shared_ptr<logic::Decoder> initialDecoder)
-	: GenericLogicPlotCurve(initialDecoder->decoder()->name, LogicPlotCurveType::Annotations)
+	: GenericLogicPlotCurve(initialDecoder->decoder()->name, initialDecoder->decoder()->id, LogicPlotCurveType::Annotations)
 	, m_visibleRows(0)
 {
     setSamples({0.0}, {0.0});
@@ -34,6 +34,8 @@ AnnotationCurve::AnnotationCurve(logic::LogicTool *logic, std::shared_ptr<logic:
     setBaseline(0.0);
 
     m_annotationDecoder = new AnnotationDecoder(this, initialDecoder, logic);
+
+    m_bindings.emplace_back(std::make_shared<adiscope::bind::Decoder>(m_annotationDecoder, initialDecoder));
 }
 
 AnnotationCurve::~AnnotationCurve()
@@ -195,6 +197,10 @@ QWidget *AnnotationCurve::getCurrentDecoderStackMenu()
 //        layout->addRow(chls);
     }
 
+    int current = 0;
+
+    m_bindings.clear();
+
     for (const auto &dec : stack) {
         if (dec != stack.front()) {
             QLabel *title = new QLabel(dec->decoder()->name);
@@ -202,7 +208,7 @@ QWidget *AnnotationCurve::getCurrentDecoderStackMenu()
         }
 	m_bindings.emplace_back(std::make_shared<adiscope::bind::Decoder>(m_annotationDecoder, dec));
 
-        m_bindings.back()->add_properties_to_form(layout, true);
+	m_bindings.back()->add_properties_to_form(layout, true);
     }
 
     return widget;
@@ -211,6 +217,12 @@ QWidget *AnnotationCurve::getCurrentDecoderStackMenu()
 void AnnotationCurve::stackDecoder(std::shared_ptr<logic::Decoder> decoder)
 {
     m_annotationDecoder->stackDecoder(decoder);
+
+    m_bindings.clear();
+    std::vector<std::shared_ptr<logic::Decoder>> stack = m_annotationDecoder->getDecoderStack();
+    for (const auto &dec : stack) {
+	    m_bindings.emplace_back(std::make_shared<adiscope::bind::Decoder>(m_annotationDecoder, dec));
+    }
 }
 
 std::vector<std::shared_ptr<adiscope::logic::Decoder> > AnnotationCurve::getDecoderStack()
@@ -226,6 +238,11 @@ int AnnotationCurve::getVisibleRows() const
 AnnotationDecoder *AnnotationCurve::getAnnotationDecoder()
 {
 	return m_annotationDecoder;
+}
+
+std::vector<std::shared_ptr<bind::Decoder> > AnnotationCurve::getDecoderBindings()
+{
+	return m_bindings;
 }
 
 void AnnotationCurve::drawLines(QPainter *painter, const QwtScaleMap &xMap, const QwtScaleMap &yMap, const QRectF &canvasRect, int from, int to) const

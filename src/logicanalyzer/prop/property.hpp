@@ -53,6 +53,9 @@ public:
 	const QString& name() const;
 	const QString& desc() const;
 
+	Glib::VariantBase get() const;
+	void set(Glib::VariantBase val);
+
 	virtual QWidget* get_widget(QWidget *parent, bool auto_commit = false) = 0;
 	virtual bool labeled_widget() const;
 	virtual void update_widget() = 0;

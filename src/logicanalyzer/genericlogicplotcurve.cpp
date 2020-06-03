@@ -1,12 +1,13 @@
 #include "genericlogicplotcurve.h"
 
 
-GenericLogicPlotCurve::GenericLogicPlotCurve(const QString &name, LogicPlotCurveType type, double pixelOffset,
+GenericLogicPlotCurve::GenericLogicPlotCurve(const QString &name, const QString &id, LogicPlotCurveType type, double pixelOffset,
 					     double traceHeight, double sampleRate,
 					     double timeTriggerOffset, uint64_t bufferSize):
 	QObject(),
 	QwtPlotCurve(),
 	m_name(name),
+	m_id(id),
 	m_pixelOffset(pixelOffset),
 	m_traceHeight(traceHeight),
 	m_sampleRate(sampleRate),
@@ -19,6 +20,11 @@ GenericLogicPlotCurve::GenericLogicPlotCurve(const QString &name, LogicPlotCurve
 QString GenericLogicPlotCurve::getName() const
 {
 	return m_name;
+}
+
+QString GenericLogicPlotCurve::getId() const
+{
+	return m_id;
 }
 
 double GenericLogicPlotCurve::getPixelOffset() const
@@ -56,6 +62,13 @@ void GenericLogicPlotCurve::setName(const QString &name)
 	if (m_name != name) {
 		m_name = name;
 		Q_EMIT nameChanged(name);
+	}
+}
+
+void GenericLogicPlotCurve::setId(const QString &id)
+{
+	if (m_id != id) {
+		m_id = id;
 	}
 }
 

@@ -714,9 +714,9 @@ void LogicAnalyzer::connectSignalsAndSlots()
 			channelBox->setText(text);
 		} else {
 			const int selectedDecoder = m_selectedChannel - m_nbChannels;
-			QWidget *widgetInLayout = ui->decoderEnumeratorLayout->itemAtPosition(selectedDecoder / 2,
-								    selectedDecoder % 2)->widget();
-			auto decoderBox = dynamic_cast<QCheckBox *>(widgetInLayout);
+			QLayout *widgetInLayout = ui->decoderEnumeratorLayout->itemAtPosition(selectedDecoder / 2,
+								    selectedDecoder % 2)->widget()->layout();
+			auto decoderBox = dynamic_cast<QCheckBox *>(widgetInLayout->itemAt(0)->widget());
 			decoderBox->setText(text);
 		}
 	});
@@ -1194,7 +1194,8 @@ void LogicAnalyzer::setupDecoders()
 
 		QSpacerItem *spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 		QWidget *decoderMenuItem = new QWidget();
-		QHBoxLayout *layout = new QHBoxLayout(decoderMenuItem);
+		QHBoxLayout *layout = new QHBoxLayout(this);
+		decoderMenuItem->setLayout(layout);
 		QCheckBox *decoderBox = new QCheckBox(decoder);
 		decoderBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 		layout->addWidget(decoderBox);
@@ -1207,8 +1208,11 @@ void LogicAnalyzer::setupDecoders()
 		layout->addWidget(deleteBtn);
 		layout->insertSpacerItem(2, spacer);
 
+		decoderBox->setVisible(true);
+		deleteBtn->setVisible(true);
+
 		connect(deleteBtn, &QPushButton::clicked, [=](){
-			ui->decoderEnumeratorLayout->removeWidget(decoderMenuItem);
+			ui->decoderEnumeratorLayout->addWidget(decoderMenuItem);
 			decoderMenuItem->deleteLater();
 
 			int chIdx = m_plotCurves.indexOf(curve);

@@ -14,11 +14,12 @@ class GenericLogicPlotCurve : public QObject, public QwtPlotCurve
 {
 	Q_OBJECT
 public:
-	GenericLogicPlotCurve(const QString &name = {}, LogicPlotCurveType type = LogicPlotCurveType::Data,
+	GenericLogicPlotCurve(const QString &name = {}, const QString &id = {}, LogicPlotCurveType type = LogicPlotCurveType::Data,
 			      double pixelOffset = 0.0, double traceHeight = 0.0, double sampleRate = 0.0,
 			      double timeTriggerOffset = 0.0, uint64_t bufferSize = 0.0);
 
 	QString getName() const;
+	QString getId() const;
 	double getPixelOffset() const;
 	double getTraceHeight() const;
 	double getSampleRate() const;
@@ -28,6 +29,7 @@ public:
 	LogicPlotCurveType getType() const;
 
 	void setName(const QString &name);
+	void setId(const QString &id);
 	void setPixelOffset(double pixelOffset);
 	void setTraceHeight(double traceHeight);
 	void setSampleRate(double sampleRate);
@@ -48,6 +50,7 @@ protected:
 
 protected:
 	QString m_name;
+	QString m_id;
 	double m_pixelOffset;
 	double m_traceHeight;
 	double m_sampleRate;

@@ -62,6 +62,7 @@ public:
 	int getVisibleRows() const;
 
 	AnnotationDecoder *getAnnotationDecoder();
+	std::vector<std::shared_ptr<adiscope::bind::Decoder>> getDecoderBindings();
 
 protected:
     void drawLines( QPainter *painter,

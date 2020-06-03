@@ -180,6 +180,7 @@ namespace adiscope {
 		QVector<QVector<int>> getAllGroups();
 		void removeFromGroup(int chnIdx, int removedChnIdx, bool &didGroupVanish);
 		void positionInGroupChanged(int chnIdx, int from, int to);
+		void setGroups(const QVector<QVector<int>> &groups);
 
 	protected:
 		virtual void cleanUpJustBeforeChannelRemoval(int chnIdx);

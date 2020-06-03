@@ -40,6 +40,16 @@ const QString& Property::desc() const
 	return desc_;
 }
 
+Glib::VariantBase Property::get() const
+{
+	return getter_();
+}
+
+void Property::set(Glib::VariantBase val)
+{
+	return setter_(val);
+}
+
 bool Property::labeled_widget() const
 {
 	return false;

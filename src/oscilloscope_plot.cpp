@@ -1518,6 +1518,11 @@ void CapturePlot::onDigitalChannelAdded(int chnIdx)
 	chOffsetHdl->setVisible(true);
 	d_offsetHandles.push_back(chOffsetHdl);
 
+	connect(logicCurve, &GenericLogicPlotCurve::nameChanged,
+		[=](const QString &name) {
+		chOffsetHdl->setName(name);
+	});
+
 	connect(chOffsetHdl, &RoundedHandleV::selected, [=](bool selected){
 		Q_EMIT channelSelected(d_offsetHandles.indexOf(chOffsetHdl), selected);
 
@@ -1846,6 +1851,21 @@ void CapturePlot::positionInGroupChanged(int chnIdx, int from, int to)
 
 	hdlGroup->at(0)->setPosition(positionOfFirstHandleInGroup);
 	hdlGroup->at(0)->triggerMove();
+}
+
+void CapturePlot::setGroups(const QVector<QVector<int> > &groups)
+{
+	for (const auto &grp : groups) {
+		beginGroupSelection();
+		for (const auto &hdl : grp) {
+			d_groupHandles.back().push_back(d_offsetHandles.at(hdl));
+		}
+		endGroupSelection();
+		d_groupHandles.back().front()->setPosition(d_groupHandles.back().front()->position());
+//		d_groupHandles.back().front()->triggerMove();
+	}
+
+	replot();
 }
 
 void CapturePlot::handleInGroupChangedPosition(int position)
