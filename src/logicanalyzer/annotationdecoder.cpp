@@ -2,6 +2,8 @@
 
 #include "logic_analyzer.h"
 
+#include <algorithm>
+
 using namespace adiscope;
 
 constexpr uint64_t MAX_CHUNK_SIZE = 256 * 1024;
@@ -110,6 +112,35 @@ void AnnotationDecoder::stackDecoder(std::shared_ptr<logic::Decoder> decoder)
     // reconfigure stack
     stackChanged();
     startDecode();
+}
+
+void AnnotationDecoder::unstackDecoder(std::shared_ptr<logic::Decoder> decoder)
+{
+	if (m_srdSession) {
+	    m_decodeCanceled = true;
+	    srd_session_terminate_reset(m_srdSession);
+	    {
+		std::unique_lock<std::mutex> lock(m_newDataMutex);
+		m_newDataCv.notify_one();
+	    }
+
+	    srd_session_metadata_set(m_srdSession, SRD_CONF_SAMPLERATE,
+				     g_variant_new_uint64(m_annotationCurve->getSampleRate()));
+    //        qDebug() << "SampleRate: " << m_annotationCurve->getSampleRate();
+	    for (const std::shared_ptr<logic::Decoder> &dec : m_stack) {
+		dec->apply_all_options();
+	    }
+	}
+
+	qDebug() << "stack size before deleting: " << m_stack.size();
+
+	m_stack.erase(std::find(m_stack.begin(), m_stack.end(), decoder));
+
+	qDebug() << "stack size after deleting: " << m_stack.size();
+
+	// reconfigure stack
+	stackChanged();
+	startDecode();
 }
 
 void AnnotationDecoder::startDecode()

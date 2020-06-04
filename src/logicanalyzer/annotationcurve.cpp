@@ -158,10 +158,27 @@ QWidget *AnnotationCurve::getCurrentDecoderStackMenu()
     QFormLayout *layout = new QFormLayout();
     grid->addLayout(layout, 1, 0, 1, 2);
 
+
+    auto getSubTitleFrame = [=](){
+	    QFrame *line = new QFrame();
+	    line->setObjectName(QString::fromUtf8("line_4"));
+//	    sizePolicy8.setHeightForWidth(line->sizePolicy().hasHeightForWidth());
+//	    line->setSizePolicy(sizePolicy8);
+	    line->setMaximumSize(QSize(16777215, 1));
+	    line->setStyleSheet(QString::fromUtf8("border: 1px solid rgba(255, 255, 255, 70);"));
+	    line->setFrameShape(QFrame::HLine);
+	    line->setFrameShadow(QFrame::Sunken);
+
+	    return line;
+    };
+
     auto channels = m_annotationDecoder->getDecoderChannels();
 
+    QVBoxLayout *qvbl = new QVBoxLayout();
     QLabel *title = new QLabel(stack.front()->decoder()->name);
-    layout->addRow(title);
+    qvbl->addWidget(title);
+    qvbl->addWidget(getSubTitleFrame());
+    layout->addRow(qvbl);
 
     for (auto &ch : channels) {
         QWidget *chls = new QWidget(widget);
@@ -197,17 +214,33 @@ QWidget *AnnotationCurve::getCurrentDecoderStackMenu()
 //        layout->addRow(chls);
     }
 
-    int current = 0;
-
     m_bindings.clear();
 
     for (const auto &dec : stack) {
         if (dec != stack.front()) {
-            QLabel *title = new QLabel(dec->decoder()->name);
-            layout->addRow(title);
-        }
-	m_bindings.emplace_back(std::make_shared<adiscope::bind::Decoder>(m_annotationDecoder, dec));
+		QVBoxLayout *qvbl = new QVBoxLayout();
+		QLabel *title = new QLabel(dec->decoder()->name);
+		QHBoxLayout *qhbl = new QHBoxLayout();
+		qhbl->addWidget(title);
+		qhbl->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+		QPushButton *deleteBtn = new QPushButton();
+		deleteBtn->setFlat(true);
+		deleteBtn->setIcon(QIcon(":/icons/close_hovered.svg"));
+		deleteBtn->setMaximumSize(QSize(16, 16));
+		qhbl->addWidget(deleteBtn);
+		qvbl->addLayout(qhbl);
+		qvbl->addWidget(getSubTitleFrame());
+		layout->addRow(qvbl);
 
+		connect(deleteBtn, &QPushButton::clicked, [=](){
+			m_classRows.clear();
+			m_annotationRows.clear();
+			m_annotationDecoder->unstackDecoder(dec);
+			Q_EMIT decoderMenuChanged();
+		});
+        }
+
+	m_bindings.emplace_back(std::make_shared<adiscope::bind::Decoder>(m_annotationDecoder, dec));
 	m_bindings.back()->add_properties_to_form(layout, true);
     }
 
@@ -277,7 +310,7 @@ void AnnotationCurve::drawLines(QPainter *painter, const QwtScaleMap &xMap, cons
         if (it == m_annotationRows.end()) {
             // Something bad happened here. Might signal wrong classes/row+rowdata
             // assignment when initializing this curve for decoding!!!!
-            Q_ASSERT(false);
+//            Q_ASSERT(false);
             continue;
         }
 

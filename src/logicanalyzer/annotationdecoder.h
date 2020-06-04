@@ -25,6 +25,7 @@ public:
     ~AnnotationDecoder();
 
     void stackDecoder(std::shared_ptr<logic::Decoder> decoder);
+    void unstackDecoder(std::shared_ptr<logic::Decoder> decoder);
 
     void startDecode();
     void stopDecode();

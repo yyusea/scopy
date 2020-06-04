@@ -37,9 +37,13 @@ class AnnotationDecoder;
 
 class AnnotationCurve : public GenericLogicPlotCurve
 {
+	Q_OBJECT
 public:
 	AnnotationCurve(logic::LogicTool *logic, std::shared_ptr<logic::Decoder> initialDecoder);
 	~AnnotationCurve();
+
+Q_SIGNALS:
+	void decoderMenuChanged();
 
 public:
     static void annotationCallback(srd_proto_data *pdata, void *annotationCurve);

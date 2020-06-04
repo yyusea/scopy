@@ -1191,6 +1191,7 @@ void LogicAnalyzer::setupDecoders()
 		curve->dataAvailable(0, m_lastCapturedSample);
 
 		m_plotCurves.push_back(curve);
+		int chId = m_plotCurves.size() - 1;
 
 		QSpacerItem *spacer = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 		QWidget *decoderMenuItem = new QWidget();
@@ -1202,7 +1203,7 @@ void LogicAnalyzer::setupDecoders()
 
 		QPushButton *deleteBtn = new QPushButton(this);
 		deleteBtn->setFlat(true);
-		deleteBtn->setIcon(QIcon(":/icons/close.svg"));
+		deleteBtn->setIcon(QIcon(":/icons/close_hovered.svg"));
 		deleteBtn->setMaximumSize(QSize(16, 16));
 
 		layout->addWidget(deleteBtn);
@@ -1253,17 +1254,21 @@ void LogicAnalyzer::setupDecoders()
 
 		decoderBox->setChecked(true);
 
-		// TODO: not working :(
-//		ui->scrollAreaWidgetContents->update();
-//		ui->scrollAreaWidgetContents->repaint();
-//		ui->scrollAreaWidgetContents->updateGeometry();
-//		// Scroll to the bottom when adding new decoder, just to make sure we see
-//		// it there (in the menu) after it's added.
-//		QScrollBar *generalSettingsMenuScrollBar = ui->generalSettingsScrollArea->verticalScrollBar();
-//		const int maxValueOfScrollBar = generalSettingsMenuScrollBar->maximum();
-//		generalSettingsMenuScrollBar->setValue(maxValueOfScrollBar);
+		connect(curve, &AnnotationCurve::decoderMenuChanged, [=](){
+			if (m_selectedChannel != chId) {
+				return;
+			}
 
-//		ui->generalSettingsScrollArea->ensureWidgetVisible(decoderBox);
+			if (m_decoderMenu) {
+				ui->decoderSettingsLayout->removeWidget(m_decoderMenu);
+				m_decoderMenu->deleteLater();
+				m_decoderMenu = nullptr;
+			}
+			m_decoderMenu = curve->getCurrentDecoderStackMenu();
+			ui->decoderSettingsLayout->addWidget(m_decoderMenu);
+
+			updateStackDecoderButton();
+		});
 	});
 
 }
