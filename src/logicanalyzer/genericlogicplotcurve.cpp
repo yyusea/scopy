@@ -78,6 +78,8 @@ void GenericLogicPlotCurve::setPixelOffset(double pixelOffset)
 		m_pixelOffset = pixelOffset;
 
 		setBaseline(m_pixelOffset + m_traceHeight);
+
+		Q_EMIT pixelOffsetChanged(m_pixelOffset);
 	}
 }
 

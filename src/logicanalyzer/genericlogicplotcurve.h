@@ -43,6 +43,7 @@ public:
 
 Q_SIGNALS:
 	void nameChanged(QString);
+	void pixelOffsetChanged(double);
 
 protected:
 	uint64_t fromTimeToSample(double time) const;

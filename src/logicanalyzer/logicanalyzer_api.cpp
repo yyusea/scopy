@@ -128,6 +128,22 @@ void LogicAnalyzer_API::setChannelHeights(const QList<double> &channelHeights)
 	}
 }
 
+QList<double> LogicAnalyzer_API::getChannelPosition() const
+{
+	QList<double> channelPosition;
+	for (int i = 0; i < m_logic->m_plotCurves.size(); ++i) {
+		channelPosition.push_back(m_logic->m_plotCurves[i]->getPixelOffset());
+	}
+	return channelPosition;
+}
+
+void LogicAnalyzer_API::setChannelPosition(const QList<double> &channelPosition)
+{
+	for (int i = 0; i < channelPosition.size(); ++i) {
+		m_logic->m_plotCurves[i]->setPixelOffset(channelPosition[i]);
+	}
+}
+
 QList<QList<QPair<int, int>>> LogicAnalyzer_API::getAssignedDecoderChannels() const
 {
 	QList<QList<QPair<int, int> > > assignedCh;

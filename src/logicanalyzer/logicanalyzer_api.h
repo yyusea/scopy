@@ -29,6 +29,7 @@ class LogicAnalyzer_API : public ApiObject
 	/* common decoders + channels */
 	Q_PROPERTY(QStringList channelNames READ getChannelNames WRITE setChannelNames)
 	Q_PROPERTY(QList<double> channelHeights READ getChannelHeights WRITE setChannelHeights)
+	Q_PROPERTY(QList<double> channelPosition READ getChannelPosition WRITE setChannelPosition)
 
 	/* groups */
 	Q_PROPERTY(QVector<QVector<int>> currentGroups READ getCurrentGroups WRITE setCurrentGroups)
@@ -78,6 +79,9 @@ public:
 
 	QList<double> getChannelHeights() const;
 	void setChannelHeights(const QList<double> &channelHeights);
+
+	QList<double> getChannelPosition() const;
+	void setChannelPosition(const QList<double> &channelPosition);
 
 	QList<QList<QPair<int, int>>> getAssignedDecoderChannels() const;
 	void setAssignedDecoderChannels(const QList<QList<QPair<int, int>>> &assignedDecoderChannels);

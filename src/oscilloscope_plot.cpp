@@ -80,7 +80,8 @@ CapturePlot::CapturePlot(QWidget *parent,
 	d_gatingEnabled(false),
 	d_startedGrouping(false),
 	d_bottomHandlesArea(nullptr),
-	d_xAxisInterval{0.0, 0.0}
+	d_xAxisInterval{0.0, 0.0},
+	d_currentHandleInitPx(0)
 {
 	setMinimumHeight(250);
 	setMinimumWidth(500);
@@ -1523,6 +1524,10 @@ void CapturePlot::onDigitalChannelAdded(int chnIdx)
 		chOffsetHdl->setName(name);
 	});
 
+	connect(logicCurve, &GenericLogicPlotCurve::pixelOffsetChanged, [=](double offset) {
+		chOffsetBar->setPosition(offset);
+	});
+
 	connect(chOffsetHdl, &RoundedHandleV::selected, [=](bool selected){
 		Q_EMIT channelSelected(d_offsetHandles.indexOf(chOffsetHdl), selected);
 
@@ -1595,6 +1600,8 @@ void CapturePlot::onDigitalChannelAdded(int chnIdx)
 //			Q_EMIT channelOffsetChanged(-offset);
 		});
 
+		chOffsetHdl->setPosition(d_currentHandleInitPx);
+		d_currentHandleInitPx += 20;
 }
 
 void CapturePlot::beginGroupSelection()

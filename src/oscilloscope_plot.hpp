@@ -318,6 +318,7 @@ namespace adiscope {
 		bool d_gatingEnabled;
 
 		QPair<double, double> d_xAxisInterval;
+		int d_currentHandleInitPx;
 	};
 }
 
