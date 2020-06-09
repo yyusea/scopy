@@ -59,7 +59,7 @@ private Q_SLOTS:
 	void rightMenuFinished(bool opened);
 	void channelSelectedChanged(int chIdx, bool selected);
 	void on_btnGroupChannels_toggled(bool checked);
-	void patternSelected(const QString& pattern);
+	void patternSelected(const QString& pattern, int ch = -1, const QString &json = {});
 	void on_btnOutputMode_toggled(bool);
 	void regenerate();
 

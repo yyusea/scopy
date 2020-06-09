@@ -204,6 +204,8 @@ public:
 	void setSelected(bool selected);
 	bool isSelected() const;
 
+	void setSelectable(bool selectable);
+
 Q_SIGNALS:
 	void selected(bool);
 

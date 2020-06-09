@@ -720,12 +720,20 @@ bool RoundedHandleV::isSelected() const
 	return m_selected;
 }
 
+void RoundedHandleV::setSelectable(bool selectable)
+{
+	if (m_selectable != selectable) {
+		m_selectable = selectable;
+		update();
+	}
+}
+
 void RoundedHandleV::paintEvent(QPaintEvent *pv)
 {
 	QPainter p(this);
 	QRect rect(0, 0, m_image.width() - 1, m_image.height() - 1);
 
-	if (m_selected) {
+	if (m_selected && m_selectable) {
 		p.setPen(QPen(Qt::white, 2, Qt::SolidLine));
 	} else {
 		p.setPen(QPen(m_roundRectColor, 1, Qt::SolidLine));

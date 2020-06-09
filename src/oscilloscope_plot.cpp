@@ -1407,6 +1407,10 @@ bool CapturePlot::eventFilter(QObject *object, QEvent *event)
 		/* update the size of the gates when the plot canvas is resized */
 		updateGateMargins();
 
+		for (int i = 0; i < d_offsetHandles.size(); ++i) {
+			d_offsetHandles[i]->triggerMove();
+		}
+
 		Q_EMIT canvasSizeChanged();
 
 	}
@@ -1477,15 +1481,17 @@ void CapturePlot::setOffsetHandleVisible(int chIdx, bool visible)
 
 void CapturePlot::addToGroup(int currentGroup, int toAdd)
 {
+	const bool selected = d_offsetHandles.at(currentGroup)->isSelected();
+	d_offsetHandles.at(currentGroup)->selected(true);
+	d_offsetHandles.at(currentGroup)->setSelected(true);
+
 	beginGroupSelection();
-	if (!d_offsetHandles.at(currentGroup)->isSelected()) {
-		d_offsetHandles.at(currentGroup)->selected(true);
-	}
+
 	d_offsetHandles.at(toAdd)->selected(true);
 	endGroupSelection(true);
 
-	d_offsetHandles.at(currentGroup)->setSelected(true);
-	d_offsetHandles.at(currentGroup)->selected(true);
+	d_offsetHandles.at(currentGroup)->setSelected(selected);
+	d_offsetHandles.at(currentGroup)->selected(selected);
 }
 
 void CapturePlot::onDigitalChannelAdded(int chnIdx)
@@ -1602,6 +1608,11 @@ void CapturePlot::onDigitalChannelAdded(int chnIdx)
 
 		chOffsetHdl->setPosition(d_currentHandleInitPx);
 		d_currentHandleInitPx += 20;
+}
+
+void CapturePlot::setChannelSelectable(int chnIdx, bool selectable)
+{
+	d_offsetHandles.at(chnIdx)->setSelectable(selectable);
 }
 
 void CapturePlot::beginGroupSelection()
@@ -1863,6 +1874,7 @@ void CapturePlot::positionInGroupChanged(int chnIdx, int from, int to)
 void CapturePlot::setGroups(const QVector<QVector<int> > &groups)
 {
 	for (const auto &grp : groups) {
+		if (grp.size() < 2) { continue; }
 		beginGroupSelection();
 		for (const auto &hdl : grp) {
 			d_groupHandles.back().push_back(d_offsetHandles.at(hdl));
@@ -1976,12 +1988,14 @@ void CapturePlot::handleInGroupChangedPosition(int position)
 		}
 	}
 
-	double y1 = yMap.invTransform(topHandle->position() -
-					    getTraceHeightInPixelsForHandle(topHandle, bonusHeight) - 5);
-	getTraceHeightInPixelsForHandle(bottomHandle, bonusHeight);
-	double y2 = yMap.invTransform(bottomHandle->position() + 5 + bonusHeight);
+	if (bottomHandle && topHandle) {
+		double y1 = yMap.invTransform(topHandle->position() -
+						    getTraceHeightInPixelsForHandle(topHandle, bonusHeight) - 5);
+		getTraceHeightInPixelsForHandle(bottomHandle, bonusHeight);
+		double y2 = yMap.invTransform(bottomHandle->position() + 5 + bonusHeight);
 
-	d_groupMarkers.at(groupIndex)->setInterval(y2, y1);
+		d_groupMarkers.at(groupIndex)->setInterval(y2, y1);
+	}
 
 	replot();
 }

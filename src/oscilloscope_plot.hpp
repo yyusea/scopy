@@ -171,6 +171,7 @@ namespace adiscope {
 		void showEvent(QShowEvent *event);
 		void printWithNoBackground(const QString& toolName = "", bool editScaleDraw = true);
 		void onDigitalChannelAdded(int chnIdx);
+		void setChannelSelectable(int chnIdx, bool selectable);
 		void removeDigitalPlotCurve(QwtPlotCurve *curve);
 		void setOffsetHandleVisible(int chIdx, bool visible);
 		void addToGroup(int currentGroup, int toAdd);

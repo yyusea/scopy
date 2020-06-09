@@ -202,6 +202,7 @@ QJsonValue Pattern_API::toJson(Pattern *p)
 	SPIPattern *sp = dynamic_cast<SPIPattern *>(p);
 	I2CPattern *ip = dynamic_cast<I2CPattern *>(p);
 	ImportPattern *imp = dynamic_cast<ImportPattern *>(p);
+	PulsePattern *pp = dynamic_cast<PulsePattern *>(p);
 
 	QJsonObject params;
 
@@ -277,9 +278,19 @@ QJsonValue Pattern_API::toJson(Pattern *p)
 
 		obj["params"] = QJsonValue(params);
 
+	} else if (pp) {
+		obj["name"] = QString::fromStdString(pp->get_name());
+		params["sample_rate"] = pp->get_sample_rate();
+		params["high"] = QJsonValue((qint32)pp->get_high_number_of_samples());
+		params["low"] = QJsonValue((qint32)pp->get_low_number_of_samples());
+		params["start"] = pp->get_start();
+		params["cnt_init"] = QJsonValue((qint32)pp->get_counter_init());
+		params["delay"] = QJsonValue((qint32)pp->get_delay());
+		params["pulses"] = QJsonValue((qint32)pp->get_no_pulses());
+
+		obj["params"] = QJsonValue(params);
 	} else {
 		obj["name"] = "none";
-
 	}
 
 	return QJsonValue(obj);;
@@ -299,6 +310,7 @@ Pattern *Pattern_API::fromJson(QJsonObject obj)
 	SPIPattern *sp = dynamic_cast<SPIPattern *>(p);
 	I2CPattern *ip = dynamic_cast<I2CPattern *>(p);
 	ImportPattern *imp = dynamic_cast<ImportPattern *>(p);
+	PulsePattern *pp = dynamic_cast<PulsePattern *>(p);
 
 	QJsonObject params = obj["params"].toObject();
 
@@ -344,6 +356,14 @@ Pattern *Pattern_API::fromJson(QJsonObject obj)
 		imp->fileName = params["file"].toString();
 		imp->channel_mapping = params["channel_mapping"].toInt();
 		imp->setFrequency(params["frequency"].toDouble());
+	} else if (pp) {
+		pp->set_counter_init(params["cnt_init"].toInt());
+		pp->set_high_number_of_samples(params["high"].toInt());
+		pp->set_low_number_of_samples(params["low"].toInt());
+		pp->set_delay(params["delay"].toInt());
+		pp->set_no_pulses(params["pulses"].toInt());
+		pp->set_sample_rate(params["sample_rate"].toDouble());
+		pp->set_start(params["start"].toBool());
 	}
 
 	return p;
@@ -3647,6 +3667,8 @@ void PatternFactory::init()
 	description_list.append(RandomPatternDescription);
 	ui_list.append(BinaryCounterPatternName);
 	description_list.append(BinaryCounterPatternDescription);
+	ui_list.append(PulsePatternName);
+	description_list.append(PulsePatternDescription);
 	ui_list.append(UARTPatternName);
 	description_list.append(UARTPatternDescription);
 	ui_list.append(SPIPatternName);
@@ -3663,8 +3685,6 @@ void PatternFactory::init()
 	ui_list.append(NumberPatternName);
 	description_list.append(NumberPatternDescription);
 
-	ui_list.append(PulsePatternName);
-	description_list.append(PulsePatternDescription);
 	ui_list.append(BinaryCounterPatternName);
 	description_list.append(BinaryCounterPatternDescription);
 	ui_list.append(GrayCounterPatternName);
@@ -3734,6 +3754,9 @@ Pattern *PatternFactory::create(int index)
 
 	case BinaryCounterId:
 		return new BinaryCounterPattern();
+
+	case PulsePatternId:
+		return new PulsePattern();
 
 	case UARTPatternId:
 		return new UARTPattern();
@@ -3817,6 +3840,9 @@ PatternUI *PatternFactory::create_ui(Pattern *pattern, int index,
 		return new UARTPatternUI(dynamic_cast<UARTPattern *>(pattern),
 					 parent);
 
+	case PulsePatternId:
+		return new PulsePatternUI(dynamic_cast<PulsePattern* >(pattern), parent);
+
 	case NumberPatternId:
 		return new NumberPatternUI(dynamic_cast<NumberPattern *>(pattern),
 					   parent);
@@ -3875,4 +3901,248 @@ QStringList PatternFactory::get_description_list()
 }
 
 
+double PulsePattern::get_sample_rate() const
+{
+	return sample_rate;
 }
+
+void PulsePattern::set_sample_rate(double value)
+{
+	sample_rate = value;
+}
+
+PulsePattern::PulsePattern() : Pattern()
+{
+	set_name(PulsePatternName);
+	set_description(PulsePatternDescription);
+	set_periodic(true);
+	set_sample_rate(1000000);
+	set_high_number_of_samples(10);
+	set_low_number_of_samples(10);
+	set_counter_init(0);
+	set_delay(0);
+	set_no_pulses(1);
+	set_start(0);
+
+}
+
+PulsePattern::~PulsePattern()
+{
+
+}
+
+uint8_t PulsePattern::generate_pattern(uint32_t sample_rate, uint32_t number_of_samples, uint16_t number_of_channels)
+{
+
+	float period_number_of_samples = delay + (no_pulses * (high_number_of_samples + low_number_of_samples));
+	qDebug() << "period_number_of_samples - " << period_number_of_samples;
+	float number_of_periods = number_of_samples / period_number_of_samples;
+	qDebug() << "number_of_periods - " << number_of_periods;
+
+	delete_buffer();
+	buffer = new short[number_of_samples];
+	int i = 0;
+
+	uint16_t buffer_val = (start) ? 0xffff : 0x0000;
+
+	short *buffer_ptr = buffer;
+	short *buffer_stop = buffer + number_of_samples;
+
+	// can happen when specifiyng 0 delay, 0 high, 0 low samples
+	if(period_number_of_samples == 0) {
+		while(buffer_ptr < buffer_stop){
+			*buffer_ptr = buffer_val;
+			buffer_ptr++;
+		}
+		return 0;
+	}
+
+	while (buffer_ptr < buffer_stop)
+	{
+		for(auto j = 0; j < delay; j++, buffer_ptr++)
+		{
+			*buffer_ptr = buffer_val;
+		}
+		for(auto j = 0; j < no_pulses; j++)
+		{
+			auto cnt = counter_init % (low_number_of_samples + high_number_of_samples);
+			for(auto k = 0; k < low_number_of_samples + high_number_of_samples; k++, buffer_ptr++) {
+				if(cnt >= high_number_of_samples + low_number_of_samples)
+					cnt=0;
+				if(cnt < low_number_of_samples) {
+					*buffer_ptr = 0x0000;
+					cnt++;
+				}
+				else if (cnt >= low_number_of_samples &&
+						 cnt < (low_number_of_samples + high_number_of_samples))
+				{
+					*buffer_ptr = 0xffff;
+					cnt++;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+uint32_t PulsePattern::get_min_sampling_freq()
+{
+	return sample_rate;
+}
+
+uint32_t PulsePattern::get_required_nr_of_samples(uint32_t  sample_rate,
+												  uint32_t number_of_channels)
+{
+	return delay+(no_pulses*(high_number_of_samples+low_number_of_samples));
+}
+
+bool PulsePattern::get_start()
+{
+	return start;
+}
+
+uint32_t PulsePattern::get_low_number_of_samples()
+{
+	return low_number_of_samples;
+}
+
+uint32_t PulsePattern::get_high_number_of_samples()
+{
+	return high_number_of_samples;
+}
+
+uint32_t PulsePattern::get_counter_init()
+{
+	return counter_init;
+}
+
+uint32_t PulsePattern::get_delay()
+{
+		return delay;
+}
+
+uint32_t PulsePattern::get_no_pulses()
+{
+	return no_pulses;
+}
+
+void PulsePattern::set_start(bool val)
+{
+	start=val;
+}
+
+void PulsePattern::set_low_number_of_samples(uint32_t val)
+{
+	low_number_of_samples=val;
+}
+
+void PulsePattern::set_high_number_of_samples(uint32_t val)
+{
+	high_number_of_samples=val;
+}
+
+void PulsePattern::set_counter_init(uint32_t val)
+{
+	counter_init=val;
+}
+
+void PulsePattern::set_delay(uint32_t val)
+{
+	delay=val;
+}
+
+void PulsePattern::set_no_pulses(uint32_t val)
+{
+	no_pulses=val;
+}
+
+PulsePatternUI::PulsePatternUI(PulsePattern *pattern,
+							   QWidget *parent) : PatternUI(parent), pattern(pattern), parent_(parent)
+{
+	qDebug()<<"PulsePatternUI created";
+	ui = new Ui::PulsePatternUI();
+	ui->setupUi(this);
+	frequencySpinButton = new ScaleSpinButton({
+		{"Hz", 1E0},
+		{"kHz", 1E+3},
+		{"MHz", 1E+6}
+	}, tr("Sample Rate"), 1e0, PG_MAX_SAMPLERATE,true,false,this, {1,2.5,5});
+	ui->verticalLayout_2->addWidget(frequencySpinButton);
+
+	setVisible(false);
+}
+
+PulsePatternUI::~PulsePatternUI()
+{
+	qDebug()<<"PulsePatternUI destroyed";
+}
+
+Pattern *PulsePatternUI::get_pattern()
+{
+	return pattern;
+}
+
+void PulsePatternUI::parse_ui()
+{
+	bool ok =0;
+	int val;
+
+	val = ui->start_CB->currentText().toInt(&ok,10);
+	pattern->set_start(val);
+
+	val = ui->counterInit_LE->text().toInt(&ok,10);
+	val = (val < 0) ? 0 : val;
+	pattern->set_counter_init(val);
+
+	val = ui->low_LE->text().toInt(&ok,10);
+	val = (val < 0) ? 0 : val;
+	pattern->set_low_number_of_samples(val);
+
+	val = ui->high_LE->text().toInt(&ok,10);
+	val = (val < 0) ? 0 : val;
+	pattern->set_high_number_of_samples(val);
+
+
+	val = ui->delay_LE->text().toInt(&ok,10);
+	val = (val < 0) ? 0 : val;
+	pattern->set_delay(val);
+
+	val = ui->noPulses_LE->text().toInt(&ok,10);
+	val = (val < 0) ? 0 : val;
+	pattern->set_no_pulses(val);
+
+	pattern->set_sample_rate(frequencySpinButton->value());
+
+	Q_EMIT patternParamsChanged();
+
+}
+
+void PulsePatternUI::build_ui(QWidget *parent,uint16_t number_of_channels)
+{
+	parent_ = parent;
+	parent->layout()->addWidget(this);
+	ui->counterInit_LE->setText(QString::number(pattern->get_counter_init()));
+	ui->delay_LE->setText(QString::number(pattern->get_delay()));
+	ui->noPulses_LE->setText(QString::number(pattern->get_no_pulses()));
+	ui->high_LE->setText(QString::number(pattern->get_high_number_of_samples()));
+	ui->low_LE->setText(QString::number(pattern->get_low_number_of_samples()));
+	ui->start_CB->setCurrentText(QString::number(pattern->get_start()));
+	frequencySpinButton->setValue(pattern->get_sample_rate());
+
+	connect(ui->counterInit_LE,SIGNAL(textChanged(QString)), this , SLOT(parse_ui()));
+	connect(ui->delay_LE,SIGNAL(textChanged(QString)), this , SLOT(parse_ui()));
+	connect(ui->noPulses_LE,SIGNAL(textChanged(QString)), this , SLOT(parse_ui()));
+	connect(ui->high_LE,SIGNAL(textChanged(QString)), this , SLOT(parse_ui()));
+	connect(ui->low_LE,SIGNAL(textChanged(QString)), this , SLOT(parse_ui()));
+	connect(ui->start_CB,SIGNAL(activated(QString)), this , SLOT(parse_ui()));
+	connect(frequencySpinButton,SIGNAL(valueChanged(double)),this,SLOT(parse_ui()));
+	parse_ui();
+}
+
+void PulsePatternUI::destroy_ui()
+{
+	parent_->layout()->removeWidget(this);
+}
+
+} // namespace adiscope
+

@@ -10,6 +10,7 @@
 #include "patterns/patterns.hpp"
 #include "../logicanalyzer/annotationcurve.h"
 #include "../logicanalyzer/annotationdecoder.h"
+#include "pattern_generator_api.h"
 
 using namespace adiscope;
 using namespace adiscope::logic;
@@ -41,7 +42,7 @@ int lcm(int a, int b)
 PatternGenerator::PatternGenerator(M2kDigital *m2kDigital, Filter *filt,
 				   ToolMenuItem *toolMenuItem, QJSEngine *engine,
 				   DIOManager *diom, ToolLauncher *parent)
-	: LogicTool(nullptr, toolMenuItem, nullptr, "Pattern Generator", parent)
+	: LogicTool(nullptr, toolMenuItem, new PatternGenerator_API(this), "Pattern Generator", parent)
 	, m_ui(new Ui::PatternGenerator)
 	, m_plot(this, 16, 10)
 	, m_plotScrollBar(new QScrollBar(Qt::Vertical, this))
@@ -113,10 +114,20 @@ PatternGenerator::PatternGenerator(M2kDigital *m2kDigital, Filter *filt,
 	m_ui->btnGeneralSettings->setChecked(true);
 
 	// API load
+	api->setObjectName(QString::fromStdString(Filter::tool_name(
+							  TOOL_PATTERN_GENERATOR)));
+	api->load(*settings);
+	api->js_register(engine);
 }
 
 PatternGenerator::~PatternGenerator()
 {
+	if (saveOnExit) {
+		api->save(*settings);
+	}
+
+	delete api;
+
 	disconnect(prefPanel, &Preferences::notify, this, &PatternGenerator::readPreferences);
 
 	if (m_isRunning) {
@@ -355,11 +366,18 @@ void PatternGenerator::updateAnnotationCurveChannelsForPattern(const QPair<QVect
 	}
 }
 
-void PatternGenerator::patternSelected(const QString &pattern)
+void PatternGenerator::patternSelected(const QString &pattern, int ch, const QString &json)
 {
+	int selected = ch != -1 ? ch : m_selectedChannel;
 	if (pattern != "-") {
 		qDebug() << "Selected: " << pattern;
-		Pattern *patternObj = PatternFactory::create(pattern);
+		Pattern *patternObj = nullptr;
+		if (pattern == "") {
+			patternObj = Pattern_API::fromString(json);
+		} else {
+			patternObj = PatternFactory::create(pattern);
+		}
+
 		PatternUI *patternUi = PatternFactory::create_ui(patternObj, m_ui->patternWidget);
 		m_ui->patternLayout->addWidget(patternUi);
 		patternUi->setVisible(true);
@@ -371,7 +389,7 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 		bool didSet = false;
 		for (auto &ep : m_enabledPatterns) {
-			if (ep.first.contains(m_selectedChannel)) {
+			if (ep.first.contains(selected)) {
 				m_ui->patternLayout->removeWidget(ep.second);
 
 				removeAnnotationCurveOfPattern(ep.second);
@@ -394,10 +412,11 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 					m_plotCurves.push_back(curve);
 
-					m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
+					m_plot.addToGroup(selected, m_plotCurves.size() - 1);
 		//			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
 					m_annotationCurvePatternUiMap[patternUi] = { curve, connectionHandle };
 
+					m_plot.setChannelSelectable(m_plotCurves.size() - 1, false);
 				}
 
 				ep.second->deleteLater();
@@ -416,9 +435,9 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 		if (!didSet) {
 			// we have a new <group, pattern> configuration
-			QVector<int> group = m_plot.getGroupOfChannel(m_selectedChannel);
+			QVector<int> group = m_plot.getGroupOfChannel(selected);
 			if (group.empty()) {
-				m_enabledPatterns.push_back({{m_selectedChannel}, patternUi});
+				m_enabledPatterns.push_back({{selected}, patternUi});
 
 			} else {
 				m_enabledPatterns.push_back({group, patternUi});
@@ -442,10 +461,11 @@ void PatternGenerator::patternSelected(const QString &pattern)
 
 				m_plotCurves.push_back(curve);
 
-				m_plot.addToGroup(m_selectedChannel, m_plotCurves.size() - 1);
+				m_plot.addToGroup(selected, m_plotCurves.size() - 1);
 	//			m_plot.setOffsetHandleVisible(m_plotCurves.size() - 1, false);
 				m_annotationCurvePatternUiMap[patternUi] = { curve, connectionHandle };
 
+				m_plot.setChannelSelectable(m_plotCurves.size() - 1, false);
 			}
 
 			patternUi->build_ui(m_ui->patternWidget, 0);
@@ -455,7 +475,7 @@ void PatternGenerator::patternSelected(const QString &pattern)
 	} else {
 		int remove = -1;
 		for (int i = 0; i < m_enabledPatterns.size(); ++i) {
-			if (m_enabledPatterns[i].first.contains(m_selectedChannel)) {
+			if (m_enabledPatterns[i].first.contains(selected)) {
 				remove = i;
 				break;
 			}
@@ -940,7 +960,9 @@ void PatternGenerator::setupPatterns()
 	m_ui->patternComboBox->addItems(PatternFactory::get_ui_list());
 
 	connect(m_ui->patternComboBox, &QComboBox::currentTextChanged,
-		this, &PatternGenerator::patternSelected);
+		[=](const QString &pattern){
+		patternSelected(pattern);
+	});
 }
 
 void PatternGenerator::updateChannelGroupPattern(bool visible)
