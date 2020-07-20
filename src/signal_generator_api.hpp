@@ -122,6 +122,10 @@ public:
 	void setWaveformFall(const QList<double>& list);
 	QList<double> getWaveformRise() const;
 	void setWaveformRise(const QList<double>& list);
+	QList<int> getStairWaveformStepsUp() const;
+	void setStairWaveformStepsUp(const QList<int>& list);
+	QList<int> getStairWaveformStepsDown() const;
+	void setStairWaveformStepsDown(const QList<int>& list);
 
 	QList<double> getMathFreq() const;
 	void setMathFreq(const QList<double>& list);

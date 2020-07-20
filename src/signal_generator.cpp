@@ -78,6 +78,8 @@
 #define INTERP_BY_100_CORR 1.168 // correction value at an interpolation by 100
 
 #define AMPLITUDE_VOLTS	5.0
+#define MULTIPLY_CT	4
+#define FREQUENCY_CT	40
 
 using namespace adiscope;
 using namespace gr;
@@ -182,6 +184,16 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 		{"MHz",1e6}
 	},tr("Frequency"), 0.001, 0.0, true, false, this);
 
+	/* Create stairstep waveform control widgets*/
+	stepsUp = new PositionSpinButton({
+		{" ",1e0},
+		}, tr("Steps Up"),0,1024,true,true,this);
+
+	stepsDown = new PositionSpinButton({
+		{" ",1e0},
+		}, tr("Steps Down"),0,1024,true,true,this);
+
+
 	/* Create trapezoidal waveform control widgets */
 	riseTime = new ScaleSpinButton({
 		{"ns",1e-9},
@@ -268,6 +280,9 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 	ui->gridLayout_2->addWidget(fallTime, 1, 0, 1, 1);
 	ui->gridLayout_2->addWidget(holdLowTime, 1, 1, 1, 1);
 
+	ui->waveformGrid->addWidget(stepsUp,2,0,1,1);
+	ui->waveformGrid->addWidget(stepsDown,2,1,1,1);
+
 	ui->waveformGrid_2->addWidget(fileAmplitude, 0, 0, 1, 1);
 	ui->waveformGrid_2->addWidget(fileOffset, 0, 1, 1, 1);
 	ui->waveformGrid_2->addWidget(fileSampleRate, 1, 0, 1, 1);
@@ -303,10 +318,18 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 	holdHighTime->setMinValue(0.00000001);
 	holdLowTime->setMinValue(0.00000001);
 
+	stepsUp->setMinValue(0);
+	stepsDown->setMinValue(0);
+
 	fallTime->setValue(0.25);
 	riseTime->setValue(0.25);
 	holdHighTime->setValue(0.25);
 	holdLowTime->setValue(0.25);
+
+	stepsUp->setValue(5);
+	stepsDown->setValue(5);
+	stepsUp->setVisible(false);
+	stepsDown->setVisible(false);
 
 	dutycycle->setValue(50);
 	dutycycle->setVisible(false);
@@ -342,6 +365,8 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 		ptr->holdl = holdLowTime->value();
 		ptr->rise = riseTime->value();
 		ptr->fall = fallTime->value();
+		ptr->steps_up = stepsUp->value();
+		ptr->steps_down = stepsDown->value();
 		ptr->dutycycle = dutycycle->value();
 		ptr->waveform = SG_SIN_WAVE;
 		ptr->math_freq = mathFrequency->value();
@@ -478,6 +503,12 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 		this, SLOT(holdLowChanged(double)));
 	connect(riseTime, SIGNAL(valueChanged(double)),
 		this, SLOT(riseChanged(double)));
+
+	connect(stepsUp,SIGNAL(valueChanged(double)),
+		this,SLOT(stepsUpChanged(double)));
+
+	connect(stepsDown,SIGNAL(valueChanged(double)),
+		this,SLOT(stepsDownChanged(double)));
 
 	connect(mathFrequency, SIGNAL(valueChanged(double)),
 	        this, SLOT(mathFreqChanged(double)));
@@ -860,6 +891,25 @@ void SignalGenerator::holdLowChanged(double value)
 	}
 }
 
+void SignalGenerator::stepsUpChanged(double value)
+{
+	auto ptr = getCurrentData();
+	qDebug()<<&ptr;
+	if(ptr->steps_up != (int)value) {
+		ptr->steps_up =(int) value;
+		resetZoom();
+	}
+}
+
+void SignalGenerator::stepsDownChanged(double value)
+{
+	auto ptr = getCurrentData();
+
+	if(ptr->steps_down != (int)value) {
+		ptr->steps_down =(int) value;
+		resetZoom();
+	}
+}
 
 void SignalGenerator::phaseChanged(double value)
 {
@@ -883,10 +933,13 @@ void SignalGenerator::waveformUpdateUi(int val)
 {
 	frequency->setEnabled(val!=SG_TRA_WAVE);
 	ui->wtrapezparams->setVisible(val==SG_TRA_WAVE);
+	stepsUp->setVisible(val==SG_STAIR_WAVE);
+	stepsDown->setVisible(val==SG_STAIR_WAVE);
 	dutycycle->setVisible(val==SG_SQR_WAVE);
 	if(val==SG_TRA_WAVE) {
 		trapezoidalComputeFrequency();
 	}
+
 }
 
 void SignalGenerator::waveformTypeChanged(int val)
@@ -898,6 +951,7 @@ void SignalGenerator::waveformTypeChanged(int val)
 		SG_TRA_WAVE,
 		SG_SAW_WAVE,
 		SG_INV_SAW_WAVE,
+		SG_STAIR_WAVE,
 	};
 
 	auto ptr = getCurrentData();
@@ -1366,6 +1420,8 @@ void SignalGenerator::setFunction(const QString& function)
 	}
 }
 
+std::vector<float> stairdata;
+
 basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 		double samp_rate, struct signal_generator_data& data,
                 double phase_correction)
@@ -1376,6 +1432,8 @@ basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 	double rise=0.5,fall=0.5;
 	double holdh=0.0,holdl=0.0;
 	float offset;
+	int rising_steps=0;
+	int falling_steps=0;
 
 	amplitude = data.amplitude / 2.0;
 	offset = data.offset;
@@ -1415,7 +1473,10 @@ basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 		holdl=data.holdl;
 		holdh=data.holdh;
 		break;
-
+	case SG_STAIR_WAVE:
+		rising_steps = data.steps_up;
+		falling_steps = data.steps_down;
+		break;
 	default:
 		break;
 	}
@@ -1424,6 +1485,12 @@ basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 	if(data.waveform==SG_SIN_WAVE)
 		src = analog::sig_source_f::make(samp_rate, analog::GR_SIN_WAVE,
 			data.frequency, amplitude, offset, phase*0.01745329);
+	else if(data.waveform==SG_STAIR_WAVE) {
+		stairdata = get_staircase(rising_steps,falling_steps,amplitude,offset,phase);
+		//qDebug()<<stairdata;
+		src = blocks::vector_source_f::make(stairdata, true);
+
+	}
 	else
 		src = scopy::trapezoidal::make(samp_rate, data.frequency, amplitude,
 					       rise, holdh, fall, holdl, offset,
@@ -1538,6 +1605,42 @@ gr::basic_block_sptr SignalGenerator::getNoise(QWidget *obj, gr::top_block_sptr 
 	}
 }
 
+gr::basic_block_sptr SignalGenerator::displayResampler(double samp_rate,
+						       double freq,
+						       gr::top_block_sptr top,
+						       gr::basic_block_sptr generated_wave,
+						       gr::basic_block_sptr noiseSrc,
+						       gr::basic_block_sptr noiseAdd
+						       )
+{
+	auto ratio = samp_rate/freq;
+	long m,n;
+	bool ok=false;
+	for(auto precision=8;precision<2048;precision<<=1)
+	{
+		reduceFraction(ratio,&m,&n,precision);
+		if(m!=0 && n!=0)
+		{
+			ok=true;
+			break;
+		}
+	}
+	if(!ok)
+	{
+		return blocks::nop::make(sizeof(float));
+	}
+
+
+	auto interp= blocks::repeat::make(sizeof(float),m);
+	auto decim=blocks::keep_one_in_n::make(sizeof(float),n);
+
+	top->connect(noiseSrc,0,noiseAdd,0);
+	top->connect(generated_wave,0,noiseAdd,1);
+	top->connect(noiseAdd,0,interp,0);
+	top->connect(interp,0,decim,0);
+	return decim;
+}
+
 gr::basic_block_sptr SignalGenerator::getSource(QWidget *obj,
 		double samp_rate, gr::top_block_sptr top, bool preview)
 {
@@ -1561,8 +1664,22 @@ gr::basic_block_sptr SignalGenerator::getSource(QWidget *obj,
 			int full_periods=(int)((double)zoomT1OnScreen*ptr->frequency);
 			double phase_in_time = zoomT1OnScreen - full_periods/ptr->frequency;
 			phase = (phase_in_time*ptr->frequency) * 360.0;
+
+			generated_wave = getSignalSource(top, samp_rate, *ptr, phase);
+
+			if(ptr->waveform!=SG_STAIR_WAVE)
+				break;
+
+			// Only for STAIR wave
+			return displayResampler(sample_rate, (ptr->frequency * (ptr->steps_up + ptr->steps_down) * MULTIPLY_CT),
+						       top, generated_wave, noiseSrc, noiseAdd);
+
+
 		}
-		generated_wave = getSignalSource(top, samp_rate, *ptr, phase);
+		else
+		{
+			generated_wave = getSignalSource(top, samp_rate, *ptr, phase);
+		}
 		break;
 
 	case SIGNAL_TYPE_BUFFER:
@@ -1617,34 +1734,8 @@ gr::basic_block_sptr SignalGenerator::getSource(QWidget *obj,
 			top->connect(add,0,phase_skip,0);
 
 			if (preview) {
-				auto ratio = sample_rate/ptr->file_sr;
-				long m,n;
-				bool ok=false;
-				for(auto precision=8;precision<2048;precision<<=1)
-				{
-					reduceFraction(ratio,&m,&n,precision);
-					if(m!=0 && n!=0)
-					{
-						ok=true;
-						break;
-					}
-				}
-				if(!ok)
-				{
-					return blocks::nop::make(sizeof(float));
-				}
-
-
-				auto interp= blocks::repeat::make(sizeof(float),m);
-				auto decim=blocks::keep_one_in_n::make(sizeof(float),n);
-				// Special noise handling for buffer previewer.
-				// Add noise before resampling, so noise is applied on buffered
-				// samples not displayed samples
-				top->connect(noiseSrc,0,noiseAdd,0);
-				top->connect(phase_skip,0,noiseAdd,1);
-				top->connect(noiseAdd,0,interp,0);
-				top->connect(interp,0,decim,0);
-
+				auto resamp = displayResampler(sample_rate, (ptr->file_sr),
+							       top, phase_skip, noiseSrc, noiseAdd);
 				double buffer_freq = 1;
 				if (ptr->file_nr_of_samples.size() > 0) {
 					buffer_freq = ptr->file_sr/(double)
@@ -1654,7 +1745,7 @@ gr::basic_block_sptr SignalGenerator::getSource(QWidget *obj,
 				double phase_in_time = zoomT1OnScreen - (full_periods/buffer_freq);
 				unsigned long samples_to_skip = phase_in_time * samp_rate;
 				auto skip = blocks::skiphead::make(sizeof(float),samples_to_skip);
-				top->connect(decim,0,skip,0);
+				top->connect(resamp,0,skip,0);
 				// return before readding the noise.
 				return skip;
 			} else {
@@ -1787,6 +1878,9 @@ int SignalGenerator::sg_waveform_to_idx(enum sg_waveform wave)
 
 	case SG_INV_SAW_WAVE:
 		return 5;
+
+	case SG_STAIR_WAVE:
+		return 6;
 	}
 }
 
@@ -1839,6 +1933,9 @@ void SignalGenerator::updateRightMenuForChn(int chIdx)
 	riseTime->setValue(ptr->rise);
 	holdHighTime->setValue(ptr->holdh);
 	holdLowTime->setValue(ptr->holdl);
+
+	stepsUp->setValue(ptr->steps_up);
+	stepsDown->setValue(ptr->steps_down);
 
 	ui->label_path->setText(ptr->file);
 	ui->label_format->setText(ptr->file_message);
@@ -1902,7 +1999,7 @@ bool SignalGenerator::use_oversampling(unsigned int chnIdx)
 	case SIGNAL_TYPE_WAVEFORM:
 
 		/* We only want oversampling for square waveforms */
-		if (ptr->waveform == SG_SQR_WAVE) {
+		if (ptr->waveform == SG_SQR_WAVE || ptr->waveform == SG_STAIR_WAVE) {
 			return true;
 		}
 
@@ -1978,6 +2075,8 @@ bool SignalGenerator::sample_rate_forced(unsigned int chnIdx)
 	if (ptr->file_type && ptr->file_sr && ptr->type==SIGNAL_TYPE_BUFFER) {
 		return true;
 	}
+	if (ptr->type == SIGNAL_TYPE_WAVEFORM && ptr->waveform == SG_STAIR_WAVE)
+		return true;
 	return false;
 }
 
@@ -1990,6 +2089,9 @@ double SignalGenerator::get_forced_sample_rate(unsigned int chnIdx)
 		if (ptr->file_type && ptr->file_sr && ptr->type==SIGNAL_TYPE_BUFFER) {
 			return ptr->file_sr;
 		}
+		if (ptr->type == SIGNAL_TYPE_WAVEFORM && ptr->waveform == SG_STAIR_WAVE)
+			return (ptr->frequency * (ptr->steps_up + ptr->steps_down));
+
 	}
 	return false;
 }
@@ -2076,6 +2178,48 @@ double SignalGenerator::get_best_ratio(double ratio, double max, double *fract)
 	return best_ratio;
 }
 
+std::vector<float> SignalGenerator::get_staircase(int rise, int fall,
+		float amplitude, float offset, int phase)
+{
+
+	std::vector<float> aux,buff,rising_buff,falling_buff,phased,final_buff;
+	rising_buff.clear();
+	falling_buff.clear();
+	aux.clear();
+	buff.clear();
+	phased.clear();
+	for(float i=0;i<=1;i+=1/(float)rise){
+		rising_buff.push_back(i);
+	}
+	for(float i=1;i>=0;i-=1/(float)fall){
+		falling_buff.push_back(i);
+	}
+	for(int i =0;i<(rise+fall);i++){
+		if(i<rise)
+			aux.push_back((rising_buff[i] * amplitude ) + offset);
+		else
+			aux.push_back((falling_buff[i-rise] * amplitude) + offset);
+
+	}
+	for(int i=0;i<phase;i++){
+		phased.push_back(aux[i]);
+	}
+	for(int i=phase;i<rise+fall+phase;i++){
+		if(i<rise+fall)
+			buff.push_back(aux[i]);
+		else
+			buff.push_back(phased[i-(rise+fall)]);
+
+	}
+
+	for(int i=0;i<(rise+fall)*MULTIPLY_CT;i++)
+		for(int k=0;k<rise+fall;k++)
+			final_buff.push_back(aux[k]);
+
+	return final_buff;
+
+}
+
 size_t SignalGenerator::get_samples_count(unsigned int chnIdx,
 		double rate, bool perfect)
 {
@@ -2096,6 +2240,11 @@ size_t SignalGenerator::get_samples_count(unsigned int chnIdx,
 	switch (ptr->type) {
 	case SIGNAL_TYPE_WAVEFORM:
 	case SIGNAL_TYPE_MATH:
+		if(ptr->waveform == SG_STAIR_WAVE)
+		{
+			return (ptr->steps_up+ptr->steps_down)*MULTIPLY_CT;
+		}
+
 		if (ptr->type == SIGNAL_TYPE_WAVEFORM) {
 			ratio = (double) rate / ptr->frequency;
 		} else {
@@ -2122,6 +2271,7 @@ size_t SignalGenerator::get_samples_count(unsigned int chnIdx,
 				&& (fmod(ratio, 2.0) != 0.0)) {
 			return 0;
 		}
+
 
 		ratio = get_best_ratio(ratio,
 				       (double)(max_buffer_size / 4), &fract);
