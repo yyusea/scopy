@@ -186,12 +186,17 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 
 	/* Create stairstep waveform control widgets*/
 	stepsUp = new PositionSpinButton({
-		{" ",1e0},
-		}, tr("Steps Up"),0,1024,true,true,this);
+		{"steps",1e0},
+		}, tr("Rising"),1,1024,true,false,this);
 
 	stepsDown = new PositionSpinButton({
-		{" ",1e0},
-		}, tr("Steps Down"),0,1024,true,true,this);
+		{"steps",1e0},
+		}, tr("Falling"),1,1024,true,false,this);
+
+	stairPhase = new PhaseSpinButton({
+		{"samples",1e0}
+	}, tr("Phase"), 0, 360, true, true, this);
+
 
 
 	/* Create trapezoidal waveform control widgets */
@@ -282,6 +287,7 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 
 	ui->waveformGrid->addWidget(stepsUp,2,0,1,1);
 	ui->waveformGrid->addWidget(stepsDown,2,1,1,1);
+	ui->waveformGrid->addWidget(stairPhase,1,1,1,1);
 
 	ui->waveformGrid_2->addWidget(fileAmplitude, 0, 0, 1, 1);
 	ui->waveformGrid_2->addWidget(fileOffset, 0, 1, 1, 1);
@@ -318,8 +324,9 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 	holdHighTime->setMinValue(0.00000001);
 	holdLowTime->setMinValue(0.00000001);
 
-	stepsUp->setMinValue(0);
-	stepsDown->setMinValue(0);
+	stepsUp->setMinValue(1);
+	stepsDown->setMinValue(1);
+	stairPhase->setMinValue(0);
 
 	fallTime->setValue(0.25);
 	riseTime->setValue(0.25);
@@ -330,6 +337,8 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 	stepsDown->setValue(5);
 	stepsUp->setVisible(false);
 	stepsDown->setVisible(false);
+	stairPhase->setValue(0);
+	stairPhase->setVisible(false);
 
 	dutycycle->setValue(50);
 	dutycycle->setVisible(false);
@@ -367,6 +376,7 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 		ptr->fall = fallTime->value();
 		ptr->steps_up = stepsUp->value();
 		ptr->steps_down = stepsDown->value();
+		ptr->stairphase = stairPhase->value();
 		ptr->dutycycle = dutycycle->value();
 		ptr->waveform = SG_SIN_WAVE;
 		ptr->math_freq = mathFrequency->value();
@@ -509,6 +519,9 @@ SignalGenerator::SignalGenerator(struct iio_context *_ctx, Filter *filt,
 
 	connect(stepsDown,SIGNAL(valueChanged(double)),
 		this,SLOT(stepsDownChanged(double)));
+
+	connect(stairPhase,SIGNAL(valueChanged(double)),
+		this,SLOT(stairPhaseChanged(double)));
 
 	connect(mathFrequency, SIGNAL(valueChanged(double)),
 	        this, SLOT(mathFreqChanged(double)));
@@ -894,7 +907,6 @@ void SignalGenerator::holdLowChanged(double value)
 void SignalGenerator::stepsUpChanged(double value)
 {
 	auto ptr = getCurrentData();
-	qDebug()<<&ptr;
 	if(ptr->steps_up != (int)value) {
 		ptr->steps_up =(int) value;
 		resetZoom();
@@ -907,6 +919,15 @@ void SignalGenerator::stepsDownChanged(double value)
 
 	if(ptr->steps_down != (int)value) {
 		ptr->steps_down =(int) value;
+		resetZoom();
+	}
+}
+void SignalGenerator::stairPhaseChanged(double value)
+{
+	auto ptr = getCurrentData();
+
+	if(ptr->stairphase != (int) value) {
+		ptr->stairphase = (int) value;
 		resetZoom();
 	}
 }
@@ -935,6 +956,8 @@ void SignalGenerator::waveformUpdateUi(int val)
 	ui->wtrapezparams->setVisible(val==SG_TRA_WAVE);
 	stepsUp->setVisible(val==SG_STAIR_WAVE);
 	stepsDown->setVisible(val==SG_STAIR_WAVE);
+	stairPhase->setVisible(val==SG_STAIR_WAVE);
+	phase->setVisible(val!=SG_STAIR_WAVE);
 	dutycycle->setVisible(val==SG_SQR_WAVE);
 	if(val==SG_TRA_WAVE) {
 		trapezoidalComputeFrequency();
@@ -1420,7 +1443,7 @@ void SignalGenerator::setFunction(const QString& function)
 	}
 }
 
-std::vector<float> stairdata;
+//std::vector<float> stairdata;
 
 basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 		double samp_rate, struct signal_generator_data& data,
@@ -1432,8 +1455,9 @@ basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 	double rise=0.5,fall=0.5;
 	double holdh=0.0,holdl=0.0;
 	float offset;
-	int rising_steps=0;
-	int falling_steps=0;
+	int rising_steps=1;
+	int falling_steps=1;
+	int stairphase;
 
 	amplitude = data.amplitude / 2.0;
 	offset = data.offset;
@@ -1476,6 +1500,7 @@ basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 	case SG_STAIR_WAVE:
 		rising_steps = data.steps_up;
 		falling_steps = data.steps_down;
+		stairphase = data.stairphase;
 		break;
 	default:
 		break;
@@ -1486,8 +1511,8 @@ basic_block_sptr SignalGenerator::getSignalSource(gr::top_block_sptr top,
 		src = analog::sig_source_f::make(samp_rate, analog::GR_SIN_WAVE,
 			data.frequency, amplitude, offset, phase*0.01745329);
 	else if(data.waveform==SG_STAIR_WAVE) {
-		stairdata = get_staircase(rising_steps,falling_steps,amplitude,offset,phase);
-		//qDebug()<<stairdata;
+		std::vector<float> stairdata = get_stairstep(rising_steps, falling_steps,
+					  amplitude, offset, stairphase);
 		src = blocks::vector_source_f::make(stairdata, true);
 
 	}
@@ -1671,7 +1696,7 @@ gr::basic_block_sptr SignalGenerator::getSource(QWidget *obj,
 				break;
 
 			// Only for STAIR wave
-			return displayResampler(sample_rate, (ptr->frequency * (ptr->steps_up + ptr->steps_down) * MULTIPLY_CT),
+			return displayResampler(sample_rate, (ptr->frequency * (ptr->steps_up + ptr->steps_down)),
 						       top, generated_wave, noiseSrc, noiseAdd);
 
 
@@ -2178,7 +2203,7 @@ double SignalGenerator::get_best_ratio(double ratio, double max, double *fract)
 	return best_ratio;
 }
 
-std::vector<float> SignalGenerator::get_staircase(int rise, int fall,
+std::vector<float> SignalGenerator::get_stairstep(int rise, int fall,
 		float amplitude, float offset, int phase)
 {
 
@@ -2188,17 +2213,18 @@ std::vector<float> SignalGenerator::get_staircase(int rise, int fall,
 	aux.clear();
 	buff.clear();
 	phased.clear();
-	for(float i=0;i<=1;i+=1/(float)rise){
+	for(float i=-amplitude;i<=amplitude;i+=amplitude/(float)rise*2.0){
 		rising_buff.push_back(i);
 	}
-	for(float i=1;i>=0;i-=1/(float)fall){
+	for(float i=amplitude;i>=-amplitude;i-=amplitude/(float)fall*2.0){
 		falling_buff.push_back(i);
 	}
 	for(int i =0;i<(rise+fall);i++){
 		if(i<rise)
-			aux.push_back((rising_buff[i] * amplitude ) + offset);
+			aux.push_back((rising_buff[i]) + offset);
+
 		else
-			aux.push_back((falling_buff[i-rise] * amplitude) + offset);
+			aux.push_back((falling_buff[i-rise]) + offset);
 
 	}
 	for(int i=0;i<phase;i++){
@@ -2214,7 +2240,7 @@ std::vector<float> SignalGenerator::get_staircase(int rise, int fall,
 
 	for(int i=0;i<(rise+fall)*MULTIPLY_CT;i++)
 		for(int k=0;k<rise+fall;k++)
-			final_buff.push_back(aux[k]);
+			final_buff.push_back(buff[k]);
 
 	return final_buff;
 

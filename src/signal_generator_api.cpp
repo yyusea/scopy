@@ -297,6 +297,33 @@ void SignalGenerator_API::setStairWaveformStepsDown(const QList<int>& list)
 
 	gen->stepsDown->setValue(gen->getCurrentData()->steps_down);
 }
+QList<int> SignalGenerator_API::getStairWaveformPhase() const
+{
+	QList<int> list;
+
+	for (int i = 0; i < gen->channels.size(); i++) {
+		auto ptr = gen->getData(gen->channels[i]);
+
+		list.append(static_cast<int>(ptr->stairphase));
+	}
+
+	return list;
+}
+
+void SignalGenerator_API::setStairWaveformPhase(const QList<int>& list)
+{
+	if (list.size() != gen->channels.size()) {
+		return;
+	}
+
+	for (int i = 0; i < gen->channels.size(); i++) {
+		auto ptr = gen->getData(gen->channels[i]);
+
+		ptr->stairphase = static_cast<int>(list.at(i));
+	}
+
+	gen->stairPhase->setValue(gen->getCurrentData()->stairphase);
+}
 
 QList<double> SignalGenerator_API::getWaveformPhase() const
 {

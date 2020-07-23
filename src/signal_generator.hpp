@@ -152,7 +152,7 @@ private:
 	gr::top_block_sptr top_block;
 	struct time_block_data *time_block_data;
 
-	PhaseSpinButton *phase, *filePhase;
+	PhaseSpinButton *phase, *filePhase, *stairPhase;
 	PositionSpinButton *offset, *fileOffset;
 	PositionSpinButton *constantValue, *dutycycle;
 	ScaleSpinButton *amplitude, *frequency;
@@ -229,7 +229,7 @@ private:
 	double zoomT1OnScreen;
 	double zoomT2OnScreen;
 
-	std::vector<float>get_staircase(int rise, int fall, float amplitude, float offset, int phase);
+	std::vector<float>get_stairstep(int rise, int fall, float amplitude, float offset, int phase);
 
 	enum sg_file_format getFileFormat(QString filePath);
 	bool loadParametersFromFile(QSharedPointer<signal_generator_data> ptr,
@@ -265,6 +265,7 @@ private Q_SLOTS:
 	void loadFileCurrentChannelData();
 	void stepsUpChanged(double value);
 	void stepsDownChanged(double value);
+	void stairPhaseChanged(double value);
 
 
 	void mathFreqChanged(double val);
@@ -315,6 +316,7 @@ struct signal_generator_data {
 
 	int steps_up;
 	int steps_down;
+	int stairphase;
 	// SIGNAL_TYPE_BUFFER
 	double file_sr;
 	double file_amplitude;
