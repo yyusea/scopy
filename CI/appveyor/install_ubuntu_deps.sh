@@ -188,13 +188,9 @@ build_qwt() {
 	svn checkout https://svn.code.sf.net/p/qwt/code/branches/$QWT_BRANCH ${WORKDIR}/qwt
 	cd ${WORKDIR}/qwt
 
+	wget https://raw.githubusercontent.com/analogdevicesinc/scopy/use-qwt-patches/CI/appveyor/patches/qwt-qwtconfig-pri-build.patch
+	patch -p1 < qwt-qwtconfig-pri-build.patch
 	# Disable components that we won't build
-	sed -i "s/^QWT_CONFIG\\s*+=\\s*QwtMathML$/#/g" qwtconfig.pri
-	sed -i "s/^QWT_CONFIG\\s*+=\\s*QwtDesigner$/#/g" qwtconfig.pri
-	sed -i "s/^QWT_CONFIG\\s*+=\\s*QwtExamples$/#/g" qwtconfig.pri
-
-	# Fix prefix
-	sed -i 's/\/usr\/local\/qwt-$$QWT_VERSION-svn/\/usr\/local/g' qwtconfig.pri
 
 	$QMAKE qwt.pro
 	make $JOBS
@@ -212,9 +208,9 @@ build_qwtpolar() {
 	cd ~/qwtpolar
 	wget https://raw.githubusercontent.com/analogdevicesinc/scopy/master/CI/appveyor/patches/qwtpolar-qwt-qt-compat.patch
 	patch -p1 < qwtpolar-qwt-qt-compat.patch
-	sed -i 's/\/usr\/local\/qwtpolar-$$QWT_POLAR_VERSION/\/usr\/local/g' qwtpolarconfig.pri
-	sed -i 's/QWT_POLAR_CONFIG     += QwtPolarExamples/ /g' qwtpolarconfig.pri
-	sed -i 's/QWT_POLAR_CONFIG     += QwtPolarDesigner/ /g' qwtpolarconfig.pri
+	wget https://raw.githubusercontent.com/analogdevicesinc/scopy/use-qwt-patches/CI/appveyor/patches/qwtpolar-qwtpolarconfig-pri-build.patch
+	patch -p1 < qwtpolar-qwtpolarconfig-pri-build.patch
+
 	$QMAKE qwtpolar.pro
 	make $JOBS
 	sudo make install

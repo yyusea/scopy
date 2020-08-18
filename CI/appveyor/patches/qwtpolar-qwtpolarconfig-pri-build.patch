@@ -1,0 +1,30 @@
+diff --git a/../temp/qwtpolar/qwtpolarconfig.pri b/qwtpolarconfig.pri
+index 116badb..6eb0aeb 100644
+--- a/../temp/qwtpolar/qwtpolarconfig.pri
++++ b/qwtpolarconfig.pri
+@@ -16,7 +16,7 @@ QWT_POLAR_VER_PAT      = 1
+ QWT_POLAR_VERSION      = $${QWT_POLAR_VER_MAJ}.$${QWT_POLAR_VER_MIN}.$${QWT_POLAR_VER_PAT}
+ 
+ unix {
+-    QWT_POLAR_INSTALL_PREFIX    = /usr/local/qwtpolar-$$QWT_POLAR_VERSION
++    QWT_POLAR_INSTALL_PREFIX    = /usr/local
+ }
+ 
+ win32 {
+@@ -70,14 +70,14 @@ QWT_POLAR_INSTALL_FEATURES  = $${QWT_POLAR_INSTALL_PREFIX}/features
+ # Otherwise you have to build it from the designer directory.
+ ######################################################################
+ 
+-QWT_POLAR_CONFIG     += QwtPolarDesigner
++ 
+ 
+ ######################################################################
+ # If you want to auto build the examples, enable the line below
+ # Otherwise you have to build them from the examples directory.
+ ######################################################################
+ 
+-QWT_POLAR_CONFIG     += QwtPolarExamples
++ 
+ 
+ ######################################################################
+ # When Qt has been built as framework qmake wants 

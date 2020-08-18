@@ -1,0 +1,42 @@
+diff --git a/../temp/qwt/qwt-6.1-multiaxes/qwtconfig.pri b/qwtconfig.pri
+index 6bf1654..bcb0128 100644
+--- a/../temp/qwt/qwt-6.1-multiaxes/qwtconfig.pri
++++ b/qwtconfig.pri
+@@ -19,8 +19,8 @@ QWT_VERSION      = $${QWT_VER_MAJ}.$${QWT_VER_MIN}.$${QWT_VER_PAT}
+ QWT_INSTALL_PREFIX = $$[QT_INSTALL_PREFIX]
+ 
+ unix {
+-    QWT_INSTALL_PREFIX    = /usr/local/qwt-$$QWT_VERSION-svn
+-    # QWT_INSTALL_PREFIX = /usr/local/qwt-$$QWT_VERSION-svn-qt-$$QT_VERSION
++    QWT_INSTALL_PREFIX    = /usr/local
++    # QWT_INSTALL_PREFIX = /usr/local-qt-$$QT_VERSION
+ }
+ 
+ win32 {
+@@ -110,7 +110,7 @@ QWT_CONFIG     += QwtOpenGL
+ # to your qmake project file.
+ ######################################################################
+ 
+-QWT_CONFIG     += QwtMathML
++#
+ 
+ ######################################################################
+ # If you want to build the Qwt designer plugin,
+@@ -118,7 +118,7 @@ QWT_CONFIG     += QwtMathML
+ # Otherwise you have to build it from the designer directory.
+ ######################################################################
+ 
+-QWT_CONFIG     += QwtDesigner
++#
+ 
+ ######################################################################
+ # Compile all Qwt classes into the designer plugin instead
+@@ -141,7 +141,7 @@ win32 {
+ # Otherwise you have to build them from the examples directory.
+ ######################################################################
+ 
+-QWT_CONFIG     += QwtExamples
++#
+ 
+ ######################################################################
+ # The playground is primarily intended for the Qwt development
