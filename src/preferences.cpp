@@ -64,7 +64,8 @@ Preferences::Preferences(QWidget *parent) :
 	m_instrument_notes_active(false),
 	m_debug_messages_active(false),
 	m_attemptTempLutCalib(false),
-	m_skipCalIfCalibrated(true)
+	m_skipCalIfCalibrated(true),
+	m_logging_enabled(true)
 {
 	ui->setupUi(this);
 
@@ -143,6 +144,11 @@ Preferences::Preferences(QWidget *parent) :
 		Q_EMIT notify();
 	});
 
+	connect(ui->enableLoggingCheckBox, &QCheckBox::stateChanged, [=](int state) {
+		m_logging_enabled = !!state;
+		Q_EMIT notify();
+	});
+
 	connect(ui->enableAnimCheckBox, &QCheckBox::stateChanged, [=](int state) {
 		animations_enabled = (!state ? false : true);
 		Q_EMIT notify();
@@ -197,6 +203,7 @@ Preferences::Preferences(QWidget *parent) :
 	pref_api->load(settings);
 
 	ui->label_restart->setVisible(false);
+	ui->loggingUnavailableLabel->setVisible(false);
 	//////////////////////
 	// TEMPORARY UNTIL ACTUAL IMPLEMENTATION
 	ui->tempLutCalibCheckbox->setVisible(false);
@@ -328,6 +335,14 @@ void Preferences::showEvent(QShowEvent *event)
 	ui->debugInstrumentCheckbox->setChecked(debugger_enabled);
 	ui->tempLutCalibCheckbox->setChecked(m_attemptTempLutCalib);
 	ui->skipCalCheckbox->setChecked(m_skipCalIfCalibrated);
+#ifdef LIBM2K_ENABLE_LOG
+	ui->enableLoggingCheckBox->setChecked(m_logging_enabled);
+#else
+	ui->enableLoggingCheckBox->setChecked(false);
+	ui->enableLoggingCheckBox->setCheckable(false);
+	ui->loggingUnavailableLabel->setVisible(true);
+	m_logging_enabled = false;
+#endif
 
 	QWidget::showEvent(event);
 }
@@ -575,6 +590,16 @@ void Preferences::setSkipCalIfCalibrated(bool val)
 	m_skipCalIfCalibrated = val;
 }
 
+bool Preferences::getLogging_enabled() const
+{
+	return m_logging_enabled;
+}
+
+void Preferences::setLogging_enabled(bool value)
+{
+	m_logging_enabled = value;
+}
+
 bool Preferences_API::getAnimationsEnabled() const
 {
 	return preferencePanel->animations_enabled;
@@ -583,6 +608,16 @@ bool Preferences_API::getAnimationsEnabled() const
 void Preferences_API::setAnimationsEnabled(const bool &enabled)
 {
 	preferencePanel->animations_enabled = enabled;
+}
+
+bool Preferences_API::getLoggingEnabled() const
+{
+	return preferencePanel->m_logging_enabled;
+}
+
+void Preferences_API::setLoggingEnabled(const bool &value)
+{
+	preferencePanel->m_logging_enabled = value;
 }
 
 bool Preferences_API::getOscLabelsEnabled() const
