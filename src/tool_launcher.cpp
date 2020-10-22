@@ -307,6 +307,11 @@ void ToolLauncher::_toolSelected(enum tool tool)
 	case TOOL_CALIBRATION:
 		selectedTool = manual_calibration;
 		break;
+
+	case TOOL_NEWINSTRUMENT:
+		selectedTool = newInstrument;
+		break;
+
 	case TOOL_LAUNCHER:
 		break;
 	}
@@ -1409,6 +1414,10 @@ void adiscope::ToolLauncher::enableAdcBasedTools()
 			QObject::connect(debugger, &Debugger::newDebuggerInstance, this,
 					 &ToolLauncher::addDebugWindow);
 		}
+
+		newInstrument = new NewInstrument(ctx, filter, menu->getToolMenuItemFor(TOOL_NEWINSTRUMENT), &js_engine,this);
+		toolList.push_back(newInstrument);
+
 
 		if (filter->compatible(TOOL_CALIBRATION)) {
 			manual_calibration = new ManualCalibration(ctx, filter,menu->getToolMenuItemFor(TOOL_CALIBRATION),
