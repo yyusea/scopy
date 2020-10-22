@@ -409,6 +409,10 @@ SpectrumAnalyzer::SpectrumAnalyzer(struct iio_context *ctx, Filter *filt,
 	connect(fft_plot, SIGNAL(sampleCountUpdated(uint)),
 	        this, SLOT(onPlotSampleCountUpdated(uint)));
 
+
+	connect(this, SIGNAL(selectedChannelChanged(int)),
+		fft_plot, SLOT(setSelectedChannel(int)));
+
 	if (ctx) {
 		build_gnuradio_block_chain();
 	} else {
@@ -839,6 +843,8 @@ void SpectrumAnalyzer::on_boxCursors_toggled(bool on)
 	fft_plot->setVertCursorsEnabled(
 				on ? cr_ui->hCursorsEnable->isChecked() : false);
 
+	fft_plot->trackModeEnabled(on ? cr_ui->btnNormalTrack->isChecked() : true);
+
 	if (on) {
 		fft_plot->setCursorReadoutsVisible(on);
 	} else {
@@ -963,7 +969,6 @@ void SpectrumAnalyzer::cursor_panel_init()
 {
 	cr_ui = new Ui::CursorsSettings;
 	cr_ui->setupUi(ui->cursorsSettings);
-	cr_ui->btnNormalTrack->hide();
 	setDynamicProperty(cr_ui->btnLockHorizontal, "use_icon", true);
 	setDynamicProperty(cr_ui->btnLockVertical, "use_icon", true);
 
@@ -978,6 +983,8 @@ void SpectrumAnalyzer::cursor_panel_init()
 		fft_plot, SLOT(setVertCursorsEnabled(bool)));
 	connect(cr_ui->vCursorsEnable, SIGNAL(toggled(bool)),
 		fft_plot, SLOT(setHorizCursorsEnabled(bool)));
+	connect(cr_ui->btnNormalTrack, &QPushButton::toggled,
+		this, &SpectrumAnalyzer::toggleCursorsMode);
 
 	cr_ui->horizontalSlider->setMaximum(100);
 	cr_ui->horizontalSlider->setMinimum(0);
@@ -994,6 +1001,30 @@ void SpectrumAnalyzer::cursor_panel_init()
 		fft_plot->moveCursorReadouts(position);
 	});
 
+}
+
+
+void SpectrumAnalyzer::toggleCursorsMode(bool toggled)
+{
+	cr_ui->hCursorsEnable->setEnabled(toggled);
+	cr_ui->vCursorsEnable->setEnabled(toggled);
+
+	if (toggled) {
+		fft_plot->setVertCursorsEnabled(hCursorsEnabled);
+		fft_plot->setHorizCursorsEnabled(vCursorsEnabled);
+//		cursor_readouts_ui->TimeCursors->setVisible(vCursorsEnabled);
+//		cursor_readouts_ui->VoltageCursors->setVisible(hCursorsEnabled);
+	} else {
+		hCursorsEnabled = cr_ui->hCursorsEnable->isChecked();
+		vCursorsEnabled = cr_ui->vCursorsEnable->isChecked();
+		fft_plot->setVertCursorsEnabled(true);
+		fft_plot->setHorizCursorsEnabled(true);
+//		cursor_readouts_ui->TimeCursors->setVisible(true);
+//		cursor_readouts_ui->VoltageCursors->setVisible(true);
+	}
+
+	cr_ui->btnLockVertical->setEnabled(toggled);
+	fft_plot->trackModeEnabled(toggled);
 }
 
 void SpectrumAnalyzer::onCursorReadoutsChanged(struct cursorReadoutsText data)
@@ -1124,6 +1155,7 @@ void SpectrumAnalyzer::onReferenceChannelDeleted()
 
 	if (channelWidget->id() < crt_channel_id) {
 		crt_channel_id--;
+		Q_EMIT selectedChannelChanged(crt_channel_id);
 	} else if (channelWidget->id() == crt_channel_id) {
 		for (int i = 0; i < m_adc_nb_channels + nb_ref_channels; ++i) {
 			auto cw = getChannelWidgetAt(i);
@@ -1132,6 +1164,7 @@ void SpectrumAnalyzer::onReferenceChannelDeleted()
 			}
 			if (cw->enableButton()->isChecked()) {
 				channelsEnabled = true;
+				Q_EMIT selectedChannelChanged(0);
 				cw->nameButton()->setChecked(true);
 				break;
 			}
@@ -1553,7 +1586,11 @@ void SpectrumAnalyzer::onChannelSelected(bool en)
 	ChannelWidget *cw = static_cast<ChannelWidget *>(QObject::sender());
 	int chIdx = cw->id();
 
-	crt_channel_id = chIdx;
+	if(crt_channel_id != chIdx)
+	{
+		crt_channel_id = chIdx;
+		Q_EMIT selectedChannelChanged(chIdx);
+	}
 
 	if (!cw->isReferenceChannel()) {
 		const bool visible = (channels[crt_channel_id]->averageType() != FftDisplayPlot::AverageType::SAMPLE);
