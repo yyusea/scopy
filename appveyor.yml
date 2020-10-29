@@ -78,8 +78,8 @@ build_script:
     - cmd: appveyor PushArtifact c:\scopy-%ARCH_BIT%bit.zip
     - cmd: appveyor PushArtifact C:\debug-%ARCH_BIT%bit.zip
    
-    - cmd: appveyor PushArtifact %DEPLOY_FILE%
-    - sh: if [[ $DEPLOY_FILE != "" ]]; then appveyor PushArtifact $DEPLOY_FILE; fi
+    #- cmd: appveyor PushArtifact %DEPLOY_FILE%
+    #- sh: if [[ $DEPLOY_FILE != "" ]]; then appveyor PushArtifact $DEPLOY_FILE; fi
 
 #on_finish:
 #    - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
