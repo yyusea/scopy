@@ -86,5 +86,5 @@ echo "### Creating archives ... "
 # appveyor PushArtifact /c/scopy-${ARCH_BIT}bit.zip
 7z a "/c/debug-${ARCH_BIT}bit.zip" /c/$DEBUG_FOLDER
 # appveyor PushArtifact /c/debug-${ARCH_BIT}bit.zip
-iscc //Qp /c/$BUILD_FOLDER/scopy-$ARCH_BIT.iss
+#iscc //Qp /c/$BUILD_FOLDER/scopy-$ARCH_BIT.iss
 # appveyor PushArtifact /c/$BUILD_FOLDER/scopy-$ARCH_BIT.iss
